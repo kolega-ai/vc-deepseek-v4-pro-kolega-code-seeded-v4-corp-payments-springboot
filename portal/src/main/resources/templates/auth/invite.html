@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Accept invitation')}"></head>
+<body>
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="auth-brand">
+            <div class="brand-mark">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M3 21V5l9-3v3h9v16H3Zm2-2h5v-2H5v2Zm0-4h5v-2H5v2Zm0-4h5V9H5v2Zm7 8h5v-2h-5v2Zm0-4h5v-2h-5v2Zm0-4h5V9h-5v2Zm7 8h2V7h-2v12Z"/></svg>
+            </div>
+            <div>
+                <div class="brand-name">Northbridge</div>
+                <div class="brand-sub">Corporate Payments</div>
+            </div>
+        </div>
+
+        <th:block th:if="${invalid != null}">
+            <h1 class="auth-title">Invitation not usable</h1>
+            <p class="auth-sub">This invitation is invalid or has expired.</p>
+            <div class="alert warning">
+                <svg class="alert-icon" width="18" height="18"><use href="#icon-warning"/></svg>
+                <span th:text="${invalid}">Invalid token.</span>
+            </div>
+            <div class="auth-foot">
+                <p class="mb-0"><a href="/login" th:href="@{/login}">Back to sign in</a></p>
+            </div>
+        </th:block>
+
+        <th:block th:if="${invalid == null}">
+            <h1 class="auth-title" th:if="${invite != null}"
+                th:text="${'Join ' + (invite.companyName ?: 'your company') + ' on Northbridge'}">Join your company on Northbridge</h1>
+            <p class="auth-sub" th:if="${invite != null}"
+               th:text="${'You have been invited as ' + invite.role + ' (' + invite.email + ')'}">You have been invited.</p>
+            <p class="auth-sub" th:if="${invite == null}">Set your name and password to finish setting up your account.</p>
+
+            <div th:if="${error != null}" class="alert danger">
+                <svg class="alert-icon" width="18" height="18"><use href="#icon-warning"/></svg>
+                <span th:text="${error}">Error.</span>
+            </div>
+
+            <form th:action="@{/invite/{t}(t=${token})}" method="post">
+                <input type="hidden" name="continueTo" th:value="${continueTo}">
+                <div class="field">
+                    <label for="fullName">Full name</label>
+                    <input type="text" id="fullName" name="fullName" autocomplete="name"
+                           placeholder="Dana Whitfield" required autofocus>
+                </div>
+                <div class="field">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" minlength="12"
+                           autocomplete="new-password" required>
+                    <p class="help">At least 12 characters.</p>
+                </div>
+                <div class="field">
+                    <label for="confirm">Confirm password</label>
+                    <input type="password" id="confirm" name="confirm" minlength="12"
+                           autocomplete="new-password" required>
+                </div>
+                <button class="btn btn-primary btn-block btn-lg" type="submit">Accept invitation</button>
+            </form>
+
+            <div class="auth-foot">
+                <a href="/login" th:href="@{/login}">Back to sign in</a>
+            </div>
+        </th:block>
+    </div>
+</div>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+    <symbol id="icon-info" viewBox="0 0 24 24"><path fill="currentColor" d="M11 7h2v2h-2V7Zm0 4h2v6h-2v-6Zm1-9a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm0 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Z"/></symbol>
+    <symbol id="icon-warning" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2 1 21h22L12 2Zm0 4.2L19.5 19h-15L12 6.2ZM11 10h2v5h-2v-5Zm0 7h2v2h-2v-2Z"/></symbol>
+</svg>
+</body>
+</html>

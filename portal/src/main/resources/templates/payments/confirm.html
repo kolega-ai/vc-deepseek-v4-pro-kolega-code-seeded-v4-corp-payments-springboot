@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Confirm payment')}"></head>
+<body>
+<th:block th:replace="~{fragments/layout :: icons}"></th:block>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: aside}"></aside>
+    <div class="main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+        <main class="content">
+            <div class="flash-area" th:if="${success != null || error != null}">
+                <div class="alert success" th:if="${success != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-check"/></svg>
+                    <span th:text="${success}">Done.</span>
+                </div>
+                <div class="alert danger" th:if="${error != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-warning"/></svg>
+                    <span th:text="${error}">Error.</span>
+                </div>
+            </div>
+
+            <div class="page-head">
+                <div>
+                    <div class="crumbs"><a th:href="@{/payments}">Payments</a> · <a th:href="@{/payments/new}">New payment</a> · Confirm</div>
+                    <h1>Confirm payment</h1>
+                    <p class="page-sub">Review the server-computed fee and FX before creating the instruction.</p>
+                </div>
+                <a class="btn btn-ghost" th:href="@{/payments/new}">
+                    <svg width="15" height="15"><use href="#icon-back"/></svg> Back
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-head">
+                    <h2>Fee &amp; FX preview</h2>
+                    <span class="badge" th:classappend="${preview.rail == 'SWIFT' ? 'gold' : (preview.rail == 'SEPA' ? 'info' : 'success')}"
+                          th:text="${preview.rail}">rail</span>
+                </div>
+                <div class="card-body">
+                    <div class="alert info">
+                        <svg class="alert-icon" width="18" height="18"><use href="#icon-info"/></svg>
+                        <span>Fees and FX rates come from the bank's published schedules and are recomputed at release — submitted values are never accepted.</span>
+                    </div>
+
+                    <dl class="kv">
+                        <dt>Amount</dt>
+                        <dd class="amount">
+                            <span th:text="${#numbers.formatDecimal(preview.amount,1,2)}">0.00</span>
+                            <span class="ccy" th:text="${preview.currency}">GBP</span>
+                        </dd>
+                        <dt>Fee (server-computed)</dt>
+                        <dd class="amount">
+                            <span th:text="${#numbers.formatDecimal(preview.fee,1,2)}">0.00</span>
+                            <span class="ccy" th:text="${preview.currency}">GBP</span>
+                        </dd>
+                        <dt>Fee breakdown</dt>
+                        <dd th:if="${preview.flat != null and preview.pct != null}"
+                            th:text="${#numbers.formatDecimal(preview.flat,1,2) + ' + ' + #numbers.formatDecimal(preview.pct,1,2) + '% of ' + #numbers.formatDecimal(preview.amount,1,2)}">0.50 + 0.10% of 0.00</dd>
+                        <dd th:if="${preview.flat == null or preview.pct == null}">—</dd>
+                        <dt>Fee band</dt>
+                        <dd th:if="${preview.min != null or preview.max != null}">
+                            <span th:if="${preview.min != null}" th:text="${'min ' + #numbers.formatDecimal(preview.min,1,2)}">min 0.50</span>
+                            <span th:if="${preview.min != null and preview.max != null}"> · </span>
+                            <span th:if="${preview.max != null}" th:text="${'max ' + #numbers.formatDecimal(preview.max,1,2)}">max 25.00</span>
+                        </dd>
+                        <dd th:if="${preview.min == null and preview.max == null}">—</dd>
+                        <dt th:if="${preview.fxRate != null}">FX rate</dt>
+                        <dd th:if="${preview.fxRate != null}" th:text="${#numbers.formatDecimal(preview.fxRate,1,4)}">1.0000</dd>
+                        <dt th:if="${preview.settlementAmount != null}">Settlement</dt>
+                        <dd th:if="${preview.settlementAmount != null}" class="amount">
+                            <span th:text="${#numbers.formatDecimal(preview.settlementAmount,1,2)}">0.00</span>
+                            <span class="ccy" th:text="${preview.settlementCurrency}">GBP</span>
+                        </dd>
+                        <dt>Debit total</dt>
+                        <dd class="amount">
+                            <span th:text="${#numbers.formatDecimal(preview.amount + preview.fee,1,2)}">0.00</span>
+                            <span class="ccy" th:text="${preview.currency}">GBP</span>
+                        </dd>
+                    </dl>
+
+                    <form method="post" th:action="@{/payments}" class="mt-2">
+                        <input type="hidden" name="debitAccountId" th:value="${form['debitAccountId']}">
+                        <input type="hidden" name="beneficiaryId" th:value="${form['beneficiaryId']}">
+                        <input type="hidden" name="amount" th:value="${form['amount']}">
+                        <input type="hidden" name="valueDate" th:value="${form['valueDate']}">
+                        <input type="hidden" name="reference" th:value="${form['reference']}">
+                        <div class="form-actions">
+                            <a class="btn btn-ghost" th:href="@{/payments/new}">Cancel</a>
+                            <button class="btn btn-outline" type="submit" name="submit" value="false">Save as draft</button>
+                            <button class="btn btn-primary" type="submit" name="submit" value="true">
+                                <svg width="15" height="15"><use href="#icon-check"/></svg> Create &amp; submit for approval
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<footer th:replace="~{fragments/layout :: scripts}"></footer>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+    <symbol id="icon-info" viewBox="0 0 24 24"><path fill="currentColor" d="M11 7h2v2h-2V7Zm0 4h2v6h-2v-6Zm1-9a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm0 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Z"/></symbol>
+</svg>
+</body>
+</html>

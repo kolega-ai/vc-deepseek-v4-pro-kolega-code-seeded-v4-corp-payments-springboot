@@ -1,0 +1,26 @@
+# Gradle
+.gradle/
+build/
+out/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+bin/
+
+# Local env & data
+.env
+data/
+uploads/
+*.log
+
+# OS
+.DS_Store
+
+# Test outputs
+hs_err_pid*
+replay_pid*

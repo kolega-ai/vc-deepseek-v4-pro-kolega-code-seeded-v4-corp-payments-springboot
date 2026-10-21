@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Beneficiary')}"></head>
+<body>
+<th:block th:replace="~{fragments/layout :: icons}"></th:block>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: aside}"></aside>
+    <div class="main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+        <main class="content">
+            <div class="flash-area" th:if="${success != null || error != null}">
+                <div class="alert success" th:if="${success != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-check"/></svg>
+                    <span th:text="${success}">Done.</span>
+                </div>
+                <div class="alert danger" th:if="${error != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-warning"/></svg>
+                    <span th:text="${error}">Error.</span>
+                </div>
+            </div>
+
+            <div class="page-head">
+                <div>
+                    <div class="crumbs"><a th:href="@{/beneficiaries}">Beneficiaries</a> ·
+                        <span th:text="${beneficiary.id == null ? 'Add' : 'Amend'}">Add</span></div>
+                    <h1 th:text="${beneficiary.id == null ? 'Add beneficiary' : 'Amend beneficiary'}">Add beneficiary</h1>
+                    <p class="page-sub">Account details must match the destination bank's records exactly.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="alert warning" th:if="${beneficiary.id == null}">
+                        <svg class="alert-icon" width="18" height="18"><use href="#icon-warning"/></svg>
+                        <span>A new beneficiary enters a 30-minute cooling period before it can receive payments.</span>
+                    </div>
+
+                    <form method="post"
+                          th:action="${beneficiary.id == null} ? @{/beneficiaries} : @{/beneficiaries/{id}(id=${beneficiary.id})}">
+                        <div class="form-grid">
+                            <div class="field span-2">
+                                <label for="name">Beneficiary name</label>
+                                <input type="text" id="name" name="name" maxlength="200"
+                                       placeholder="Thames &amp; Co Ltd" th:value="${beneficiary.name}" required>
+                            </div>
+                            <div class="field">
+                                <label for="account-number">Account number</label>
+                                <input type="text" id="account-number" name="accountNumber"
+                                       placeholder="50731248" th:value="${beneficiary.accountNumber}" required>
+                                <p class="help">Changing the account number restarts the cooling period.</p>
+                            </div>
+                            <div class="field">
+                                <label for="bank-code">Bank code / sort code</label>
+                                <input type="text" id="bank-code" name="bankCode"
+                                       placeholder="040004" th:value="${beneficiary.bankCode}" required>
+                            </div>
+                            <div class="field">
+                                <label for="currency">Currency</label>
+                                <select id="currency" name="currency" required>
+                                    <option value="GBP" th:selected="${beneficiary.currency == 'GBP'}">GBP</option>
+                                    <option value="EUR" th:selected="${beneficiary.currency == 'EUR'}">EUR</option>
+                                    <option value="USD" th:selected="${beneficiary.currency == 'USD'}">USD</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <a class="btn btn-ghost" th:href="@{/beneficiaries}">Cancel</a>
+                            <button class="btn btn-primary" type="submit">
+                                <svg width="15" height="15"><use href="#icon-check"/></svg> Save beneficiary
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<footer th:replace="~{fragments/layout :: scripts}"></footer>
+</body>
+</html>

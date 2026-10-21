@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Your profile')}"></head>
+<body>
+<th:block th:replace="~{fragments/layout :: icons}"></th:block>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: aside}"></aside>
+    <div class="main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+        <main class="content">
+            <div class="flash-area" th:if="${success != null || error != null}">
+                <div class="alert success" th:if="${success != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-check"/></svg>
+                    <span th:text="${success}">Done.</span>
+                </div>
+                <div class="alert danger" th:if="${error != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-warning"/></svg>
+                    <span th:text="${error}">Error.</span>
+                </div>
+            </div>
+
+            <div class="page-head">
+                <div>
+                    <div class="crumbs"><a th:href="@{/dashboard}">Workspace</a> · Your profile</div>
+                    <h1>Your profile</h1>
+                    <p class="page-sub">How you appear in this workspace, and the credentials you sign in with.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-2">
+                <div class="card">
+                    <div class="card-head"><h2>Profile</h2></div>
+                    <div class="card-body">
+                        <dl class="kv">
+                            <dt>Name</dt>
+                            <dd th:text="${me.fullName}">Name</dd>
+                            <dt>Email</dt>
+                            <dd th:text="${me.email}">email</dd>
+                            <dt>Role</dt>
+                            <dd>
+                                <span class="badge" th:classappend="${({'company_maker':'neutral','company_checker':'info','company_admin':'gold','bank_ops':'info','bank_admin':'gold'})[me.role] ?: 'neutral'}"
+                                      th:text="${me.role}">role</span>
+                            </dd>
+                            <dt>Company</dt>
+                            <dd th:if="${me.companyName != null}" th:text="${me.companyName}">company</dd>
+                            <dd th:if="${me.companyName == null}">—</dd>
+                            <dt>Approval limit</dt>
+                            <dd class="amount">
+                                <span th:if="${me.approvalLimit != null}" th:text="${#numbers.formatDecimal(me.approvalLimit,1,2)}">0.00</span>
+                                <span th:if="${me.approvalLimit == null}">—</span>
+                            </dd>
+                            <dt>Company daily limit</dt>
+                            <dd class="amount">
+                                <span th:if="${me.companyDailyLimit != null}" th:text="${#numbers.formatDecimal(me.companyDailyLimit,1,2)}">0.00</span>
+                                <span th:if="${me.companyDailyLimit == null}">—</span>
+                            </dd>
+                        </dl>
+
+                        <form method="post" th:action="@{/profile}" class="mt-2">
+                            <div class="field">
+                                <label for="full-name">Full name</label>
+                                <input type="text" id="full-name" name="fullName" maxlength="200"
+                                       th:value="${me.fullName}" required>
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn btn-primary" type="submit">Save profile</button>
+                            </div>
+                        </form>
+
+                        <form method="post" th:action="@{/profile/signing-phrase}" class="mt-2">
+                            <div class="field">
+                                <label for="signing-phrase">Batch signing phrase</label>
+                                <input type="password" id="signing-phrase" name="phrase" autocomplete="off"
+                                       minlength="8" required>
+                                <p class="help">Used to sign the bulk payment instructions you submit.</p>
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn btn-outline" type="submit">Save signing phrase</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head"><h2>Change password</h2></div>
+                    <div class="card-body">
+                        <form method="post" th:action="@{/profile/password}">
+                            <div class="field">
+                                <label for="current-password">Current password</label>
+                                <input type="password" id="current-password" name="currentPassword"
+                                       autocomplete="current-password" required>
+                            </div>
+                            <div class="field">
+                                <label for="new-password">New password</label>
+                                <input type="password" id="new-password" name="newPassword" minlength="12"
+                                       autocomplete="new-password" required>
+                                <p class="help">At least 12 characters. Don't reuse a password from another service.</p>
+                            </div>
+                            <div class="field">
+                                <label for="confirm-password">Confirm new password</label>
+                                <input type="password" id="confirm-password" name="confirm" minlength="12"
+                                       autocomplete="new-password" required>
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn btn-primary" type="submit">
+                                    <svg width="15" height="15"><use href="#icon-key"/></svg> Change password
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<footer th:replace="~{fragments/layout :: scripts}"></footer>
+</body>
+</html>

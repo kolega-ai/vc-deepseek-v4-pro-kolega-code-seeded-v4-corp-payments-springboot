@@ -1,0 +1,26 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:batch;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+  batch:
+    jdbc:
+      initialize-schema: always
+    job:
+      enabled: false
+  main:
+    web-application-type: none
+
+app:
+  payment-api:
+    base-url: http://localhost:9999
+  core:
+    base-url: http://localhost:9999
+    api-key: test-core-key-0123456789
+  security:
+    internal-service-token: test-internal-service-token-0123456789
+    core-scope-secret: test-core-scope-secret-0123456789
+
+logging:
+  level:
+    root: WARN

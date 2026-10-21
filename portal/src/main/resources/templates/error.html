@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head(${title} ?: 'Error')}"></head>
+<body>
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="auth-brand">
+            <div class="brand-mark">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M3 21V5l9-3v3h9v16H3Zm2-2h5v-2H5v2Zm0-4h5v-2H5v2Zm0-4h5V9H5v2Zm7 8h5v-2h-5v2Zm0-4h5v-2h-5v2Zm0-4h5V9h-5v2Zm7 8h2V7h-2v12Z"/></svg>
+            </div>
+            <div>
+                <div class="brand-name">Northbridge</div>
+                <div class="brand-sub">Corporate Payments</div>
+            </div>
+        </div>
+
+        <div class="empty-icon" style="background:var(--danger-soft);color:var(--danger)">
+            <svg width="24" height="24"><use href="#icon-warning"/></svg>
+        </div>
+
+        <div class="error-status" th:text="${status}" style="font-family:var(--font-display);font-size:4rem;font-weight:600;color:var(--danger);line-height:1;margin:.5rem 0 .75rem">500</div>
+        <h1 class="auth-title" th:text="${title}">Something went wrong</h1>
+        <p class="auth-sub" th:text="${message}">message</p>
+
+        <div class="flex gap-1">
+            <a class="btn btn-primary" th:href="@{/}">
+                <svg width="15" height="15"><use href="#icon-dashboard"/></svg> Go to dashboard
+            </a>
+            <a class="btn btn-outline" th:href="@{/login}">Sign in</a>
+        </div>
+
+        <div class="auth-foot">
+            If this keeps happening, contact your bank relationship manager.
+        </div>
+    </div>
+</div>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+    <symbol id="icon-warning" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2 1 21h22L12 2Zm0 4.2L19.5 19h-15L12 6.2ZM11 10h2v5h-2v-5Zm0 7h2v2h-2v-2Z"/></symbol>
+    <symbol id="icon-dashboard" viewBox="0 0 24 24"><path fill="currentColor" d="M4 3h6a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm10 0h6a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm0 12h6a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1Z"/></symbol>
+</svg>
+</body>
+</html>

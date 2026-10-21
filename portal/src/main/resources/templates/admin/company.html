@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="en">
+<head th:replace="~{fragments/layout :: head(${pageTitle})}"></head>
+<body>
+<th:block th:replace="~{fragments/layout :: icons}"></th:block>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: aside}"></aside>
+    <div class="main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+        <main class="content">
+            <div class="flash-area" th:if="${success != null || error != null}">
+                <div class="alert success" th:if="${success != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-check"/></svg>
+                    <span th:text="${success}">Done.</span>
+                </div>
+                <div class="alert danger" th:if="${error != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-warning"/></svg>
+                    <span th:text="${error}">Error.</span>
+                </div>
+            </div>
+
+            <div class="page-head">
+                <div>
+                    <div class="crumbs">
+                        <a th:href="@{/admin}">Administration</a> ·
+                        <a th:href="@{/admin/companies}">Companies</a> ·
+                        <span th:text="${company.legalName}">company</span>
+                    </div>
+                    <h1 th:text="${company.legalName}">Company</h1>
+                    <p class="page-sub" th:text="${company.registrationNumber}">registration</p>
+                </div>
+                <span class="badge" th:classappend="${company.status == 'ACTIVE' ? 'success' : 'danger'}"
+                      th:text="${company.status}">status</span>
+            </div>
+
+            <div class="grid grid-2">
+                <div class="card">
+                    <div class="card-head"><h2>Company</h2></div>
+                    <div class="card-body">
+                        <dl class="kv">
+                            <dt>Legal name</dt>
+                            <dd th:text="${company.legalName}">name</dd>
+                            <dt>Registration</dt>
+                            <dd class="mono" th:text="${company.registrationNumber}">reg</dd>
+                            <dt>Status</dt>
+                            <dd>
+                                <span class="badge" th:classappend="${company.status == 'ACTIVE' ? 'success' : 'danger'}"
+                                      th:text="${company.status}">status</span>
+                            </dd>
+                            <dt>Base currency</dt>
+                            <dd th:text="${company.baseCurrency}">GBP</dd>
+                            <dt>Daily limit</dt>
+                            <dd class="amount">
+                                <span th:text="${#numbers.formatDecimal(company.dailyLimit,1,2)}">0.00</span>
+                                <span class="ccy" th:text="${company.baseCurrency}">GBP</span>
+                            </dd>
+                            <dt>Users</dt>
+                            <dd th:text="${company.userCount}">0</dd>
+                            <dt>Utilisation today</dt>
+                            <dd>
+                                <span class="amount"><span th:text="${#numbers.formatDecimal(company.utilisationToday.used,1,2)}">0.00</span></span>
+                                <span class="muted small">
+                                    of <span th:text="${#numbers.formatDecimal(company.utilisationToday.limit,1,2)}">0</span>
+                                    <span th:text="${company.baseCurrency}">GBP</span>
+                                </span>
+                                <div class="progress mt-1" th:classappend="${company.utilisationToday.percent > 80 ? 'danger' : (company.utilisationToday.percent > 60 ? 'warn' : '')}">
+                                    <span th:style="'width:' + ${company.utilisationToday.percent} + '%'"></span>
+                                </div>
+                                <div class="small muted" th:text="${company.utilisationToday.percent} + '% of limit'">0%</div>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head"><h2>Set company limit</h2></div>
+                    <div class="card-body">
+                        <form method="post" th:action="@{/admin/companies/{id}/limit(id=${company.id})}"
+                              data-confirm="Update this company's daily limit? This decision is recorded in the audit log.">
+                            <div class="field">
+                                <label for="lim-amount">Daily limit</label>
+                                <input type="number" step="0.01" min="0.01" id="lim-amount" name="dailyLimit" required>
+                            </div>
+                            <div class="field">
+                                <label for="lim-reason">Reason</label>
+                                <textarea id="lim-reason" name="reason" required></textarea>
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn btn-primary" type="submit">Update daily limit</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card-foot">Limit changes take effect immediately and are appended to the audit log.</div>
+                </div>
+            </div>
+
+            <div class="card mt-2">
+                <div class="card-head"><h2>Accounts</h2></div>
+                <div class="card-body flush">
+                    <div th:if="${#lists.isEmpty(accounts)}" class="empty-state">
+                        <h3>No accounts provisioned</h3>
+                        <p>Provision the first account for this company below.</p>
+                    </div>
+                    <div class="table-wrap" th:unless="${#lists.isEmpty(accounts)}">
+                        <table class="data">
+                            <thead>
+                            <tr><th>Account number</th><th>Currency</th><th>Product</th><th>Name</th></tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="a : ${accounts}">
+                                <td class="mono" th:text="${a.accountNumber}">acct</td>
+                                <td th:text="${a.currency}">GBP</td>
+                                <td th:text="${a.product}">product</td>
+                                <td th:text="${a.name != null ? a.name : '—'}">name</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-foot">
+                    <details class="disclosure">
+                        <summary>Provision account</summary>
+                        <div class="disclosure-body">
+                            <form method="post" th:action="@{/admin/companies/{id}/accounts(id=${company.id})}">
+                                <div class="form-grid">
+                                    <div class="field">
+                                        <label for="acc-number">Account number</label>
+                                        <input type="text" id="acc-number" name="accountNumber"
+                                               pattern="[0-9]{8,20}" maxlength="20" required>
+                                        <div class="help">8–20 digits, unique in the core system</div>
+                                    </div>
+                                    <div class="field">
+                                        <label for="acc-currency">Currency</label>
+                                        <select id="acc-currency" name="currency">
+                                            <option value="GBP">GBP</option>
+                                            <option value="EUR">EUR</option>
+                                            <option value="USD">USD</option>
+                                        </select>
+                                    </div>
+                                    <div class="field">
+                                        <label for="acc-product">Product</label>
+                                        <input type="text" id="acc-product" name="product" required>
+                                    </div>
+                                    <div class="field">
+                                        <label for="acc-balance">Opening balance</label>
+                                        <input type="number" step="0.01" id="acc-balance" name="openingBalance" required>
+                                    </div>
+                                </div>
+                                <div class="form-actions">
+                                    <button class="btn btn-primary" type="submit">Provision account</button>
+                                </div>
+                            </form>
+                        </div>
+                    </details>
+                </div>
+            </div>
+
+            <div class="card mt-2">
+                <div class="card-head"><h2>Invite company administrator</h2></div>
+                <div class="card-body">
+                    <form method="post" th:action="@{/admin/companies/{id}/admins/invite(id=${company.id})}">
+                        <div class="form-grid">
+                            <div class="field">
+                                <label for="inv-email">Work email</label>
+                                <input type="email" id="inv-email" name="email" autocomplete="username" required>
+                            </div>
+                            <div class="field">
+                                <label for="inv-name">Full name</label>
+                                <input type="text" id="inv-name" name="fullName" required>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-primary" type="submit">
+                                <svg width="15" height="15"><use href="#icon-users"/></svg> Send invite
+                            </button>
+                        </div>
+                    </form>
+                    <form method="post" class="mt-2" th:action="@{/admin/companies/{id}/directory/verify(id=${company.id})}">
+                        <div class="field">
+                            <label for="dir-officer">Check staff directory</label>
+                            <input type="text" id="dir-officer" name="officerId" placeholder="Officer ID">
+                            <div class="help">Confirms the person exists in the bank directory before inviting.</div>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-outline" type="submit">Verify officer</button>
+                        </div>
+                    </form>
+                    <form method="get" class="mt-2" th:action="@{/admin/companies/{id}/directory/search(id=${company.id})}">
+                        <div class="field">
+                            <label for="dir-query">Search staff directory</label>
+                            <input type="text" id="dir-query" name="query" placeholder="Work email">
+                            <div class="help">Find a colleague before inviting them to the company.</div>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-outline" type="submit">Search directory</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<footer th:replace="~{fragments/layout :: scripts}"></footer>
+</body>
+</html>

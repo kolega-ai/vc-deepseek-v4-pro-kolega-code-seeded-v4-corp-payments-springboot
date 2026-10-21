@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Upload bulk file')}"></head>
+<body>
+<th:block th:replace="~{fragments/layout :: icons}"></th:block>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: aside}"></aside>
+    <div class="main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+        <main class="content">
+            <div class="flash-area" th:if="${success != null || error != null}">
+                <div class="alert success" th:if="${success != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-check"/></svg>
+                    <span th:text="${success}">Done.</span>
+                </div>
+                <div class="alert danger" th:if="${error != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-warning"/></svg>
+                    <span th:text="${error}">Error.</span>
+                </div>
+            </div>
+
+            <div class="page-head">
+                <div>
+                    <div class="crumbs"><a th:href="@{/bulk-payments}">Bulk payments</a> · Upload</div>
+                    <h1>Upload bulk file</h1>
+                    <p class="page-sub">Attach a CSV or paste its contents — every line is validated server-side before anything moves.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-2">
+                <div class="card">
+                    <div class="card-head"><h2>CSV format</h2></div>
+                    <div class="card-body">
+                        <p class="small muted mt-0">The first line is a header carrying the declared total and line count; each following line is one payment instruction.</p>
+                        <pre class="mono small" style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.8rem 1rem;overflow-x:auto">H,&lt;declaredTotal&gt;,&lt;lineCount&gt;
+D,&lt;debitAccount&gt;,&lt;beneficiaryAccount&gt;,&lt;bankCode&gt;,&lt;amount&gt;,&lt;valueDate&gt;,&lt;reference&gt;</pre>
+                        <p class="small muted mb-0">Example:</p>
+                        <pre class="mono small" style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.8rem 1rem;overflow-x:auto">H,1500.00,2
+D,20301001,50731248,040004,500.00,2026-09-10,INV-1042
+D,20301001,89302933,040004,1000.00,2026-09-10,INV-1043</pre>
+                        <div class="mt-1" th:if="${! #lists.isEmpty(accounts)}">
+                            <p class="small muted mb-0">Your debit accounts:</p>
+                            <p class="small mono mb-0" th:each="a : ${accounts}" th:text="${a.accountNumber + ' · ' + a.currency}">20301001 · GBP</p>
+                        </div>
+                        <div class="mt-1" th:if="${! #lists.isEmpty(beneficiaries)}">
+                            <p class="small muted mb-0">Payable beneficiaries:</p>
+                            <p class="small mono mb-0" th:each="b : ${beneficiaries}" th:if="${b.payable}"
+                               th:text="${b.name + ' · ' + b.accountNumber + ' · ' + b.bankCode}">name · acct · bank</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head"><h2>Upload</h2></div>
+                    <div class="card-body">
+                        <form method="post" enctype="multipart/form-data" th:action="@{/bulk-payments}">
+                            <div class="form-grid">
+                                <div class="field span-2">
+                                    <label for="file-name">File name</label>
+                                    <input type="text" id="file-name" name="fileName" placeholder="payroll-sept.csv" required>
+                                </div>
+                                <div class="field span-2">
+                                    <label for="bulk-file">Choose a CSV file</label>
+                                    <input type="file" id="bulk-file" name="sourceFile" accept=".csv" data-bulk-file-input>
+                                    <p class="help">Selecting a file fills the text area below — or paste the CSV directly.</p>
+                                </div>
+                                <div class="field span-2">
+                                    <label for="csv-content">CSV content</label>
+                                    <textarea id="csv-content" name="csvContent" rows="10" required data-bulk-textarea
+                                              placeholder="H,1500.00,2&#10;D,20301001,50731248,040004,500.00,2026-09-10,INV-1042&#10;D,20301001,89302933,040004,1000.00,2026-09-10,INV-1043"></textarea>
+                                    <p class="help">Header line first, then one <span class="mono">D,…</span> line per payment.</p>
+                                </div>
+                            </div>
+                            <div data-bulk-preview></div>
+                            <div class="form-actions">
+                                <a class="btn btn-ghost" th:href="@{/bulk-payments}">Cancel</a>
+                                <button class="btn btn-primary" type="submit">
+                                    <svg width="15" height="15"><use href="#icon-upload"/></svg> Upload for processing
+                                </button>
+                            </div>
+                        </form>
+                        <div class="alert info">
+                            <svg class="alert-icon" width="18" height="18"><use href="#icon-info"/></svg>
+                            <span>After upload, the batch processor parses and validates the file automatically. Check the file's detail page for line-by-line results.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<footer th:replace="~{fragments/layout :: scripts}"></footer>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+    <symbol id="icon-info" viewBox="0 0 24 24"><path fill="currentColor" d="M11 7h2v2h-2V7Zm0 4h2v6h-2v-6Zm1-9a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm0 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Z"/></symbol>
+</svg>
+</body>
+</html>

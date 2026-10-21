@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Payment')}"></head>
+<body>
+<th:block th:replace="~{fragments/layout :: icons}"></th:block>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: aside}"></aside>
+    <div class="main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+        <main class="content">
+            <div class="flash-area" th:if="${success != null || error != null}">
+                <div class="alert success" th:if="${success != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-check"/></svg>
+                    <span th:text="${success}">Done.</span>
+                </div>
+                <div class="alert danger" th:if="${error != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-warning"/></svg>
+                    <span th:text="${error}">Error.</span>
+                </div>
+            </div>
+
+            <div class="page-head">
+                <div>
+                    <div class="crumbs">
+                        <a th:href="${currentUser.role == 'bank_ops' or currentUser.role == 'bank_admin'} ? @{/ops/releases} : @{/payments}">Payments</a>
+                        · <span th:text="${payment.summary.ref}">REF</span>
+                    </div>
+                    <h1 th:text="${payment.summary.ref}">Payment</h1>
+                    <p class="page-sub" th:text="${payment.summary.reference}">reference</p>
+                </div>
+                <span class="badge" th:classappend="${({'RELEASED':'success','APPROVED':'info','PENDING_APPROVAL':'warning','PARTIALLY_APPROVED':'warning','DRAFT':'neutral','REJECTED':'danger','RETURNED':'neutral','FAILED':'danger','QUEUED_FOR_RELEASE':'info','REVERSED':'neutral'})[payment.summary.status] ?: 'neutral'}"
+                      th:text="${payment.summary.status}">status</span>
+                <a class="btn btn-outline btn-sm" th:href="@{/payments/{id}/receipt(id=${payment.summary.id})}">
+                    <svg width="14" height="14"><use href="#icon-documents"/></svg> Receipt
+                </a>
+            </div>
+
+            <!-- ======= workflow action bar ======= -->
+            <div class="action-bar" th:if="${payment.approvalContext.canApprove or payment.approvalContext.canReject or payment.approvalContext.canSubmit or payment.approvalContext.canAmend}">
+                <div class="action-note" th:if="${payment.approvalContext.canApprove}">
+                    Your limit:
+                    <strong th:text="${#numbers.formatDecimal(payment.approvalContext.myLimit,1,2)} + ' ' + ${payment.approvalContext.baseCurrency}">0</strong> ·
+                    required:
+                    <strong th:text="${#numbers.formatDecimal(payment.approvalContext.requiredAmount,1,2)}">0</strong>
+                    <span th:if="${payment.approvalContext.dualApproval}" class="badge warning">dual approval — two checkers needed</span>
+                    <span class="muted small"> · headroom today:
+                        <span th:text="${payment.approvalContext.headroom != null ? #numbers.formatDecimal(payment.approvalContext.headroom,1,2) : '—'}">0</span>
+                    </span>
+                </div>
+                <form th:if="${payment.approvalContext.canApprove}" method="post" th:action="@{/payments/{id}/approve(id=${payment.summary.id})}"
+                      class="form-inline" data-confirm="Approve this payment? This decision is recorded in the audit log.">
+                    <input type="text" name="comment" placeholder="Comment (optional)" aria-label="Approval comment">
+                    <button class="btn btn-primary" type="submit">
+                        <svg width="15" height="15"><use href="#icon-check"/></svg> Approve
+                    </button>
+                </form>
+                <form th:if="${payment.approvalContext.canReject}" method="post" th:action="@{/payments/{id}/reject(id=${payment.summary.id})}"
+                      class="form-inline" data-confirm="Reject this payment? This cannot be undone.">
+                    <input type="text" name="comment" placeholder="Reason (optional)" aria-label="Rejection reason">
+                    <button class="btn btn-danger-outline" type="submit">
+                        <svg width="15" height="15"><use href="#icon-x"/></svg> Reject
+                    </button>
+                </form>
+                <form th:if="${payment.approvalContext.canReject}" method="post" th:action="@{/payments/{id}/return(id=${payment.summary.id})}"
+                      class="form-inline">
+                    <input type="text" name="comment" placeholder="What to fix (optional)" aria-label="Return reason">
+                    <button class="btn btn-outline" type="submit">
+                        <svg width="15" height="15"><use href="#icon-back"/></svg> Return for amendment
+                    </button>
+                </form>
+                <form th:if="${payment.approvalContext.canSubmit}" method="post" th:action="@{/payments/{id}/submit(id=${payment.summary.id})}"
+                      data-confirm="Submit this payment for approval?">
+                    <button class="btn btn-primary" type="submit">Submit for approval</button>
+                </form>
+            </div>
+
+            <div data-tabs>
+                <nav class="tabs">
+                    <a class="tab active" href="#overview" data-tab="overview">Overview</a>
+                    <a class="tab" href="#timeline" data-tab="timeline">Timeline</a>
+                    <a class="tab" href="#comments" data-tab="comments">Comments</a>
+                    <a class="tab" href="#amend" data-tab="amend" th:if="${payment.approvalContext.canAmend}">Amend</a>
+                </nav>
+
+                <!-- ======= overview ======= -->
+                <section id="overview" data-tab-panel>
+                    <div class="grid grid-2">
+                        <div class="card">
+                            <div class="card-head"><h2>Payment details</h2></div>
+                            <div class="card-body">
+                                <dl class="kv">
+                                    <dt>Debit account</dt>
+                                    <dd class="mono" th:text="${payment.summary.debitAccountNumber}">acct</dd>
+                                    <dt>Beneficiary</dt>
+                                    <dd>
+                                        <span th:text="${payment.summary.beneficiaryName}">name</span>
+                                        <span class="cell-sub mono" th:text="${payment.beneficiaryAccountNumber} + ' · ' + ${payment.beneficiaryBankCode}">acct · bank</span>
+                                    </dd>
+                                    <dt>Value date</dt>
+                                    <dd th:text="${#temporals.format(payment.summary.valueDate,'dd MMM yyyy')}">date</dd>
+                                    <dt>Created by</dt>
+                                    <dd th:text="${payment.summary.createdByName}">maker</dd>
+                                    <dt>Created at</dt>
+                                    <dd th:text="${#temporals.format(payment.summary.createdAt,'dd MMM yyyy · HH:mm')}">created</dd>
+                                    <dt>Amended by</dt>
+                                    <dd th:text="${payment.amendedByName != null ? payment.amendedByName : '—'}">—</dd>
+                                </dl>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-head"><h2>Money &amp; pricing</h2></div>
+                            <div class="card-body">
+                                <dl class="kv">
+                                    <dt>Amount</dt>
+                                    <dd class="amount"><span th:text="${#numbers.formatDecimal(payment.summary.amount,1,2)}">0.00</span> <span class="ccy" th:text="${payment.summary.currency}">GBP</span></dd>
+                                    <dt>Fee (server-computed)</dt>
+                                    <dd class="amount"><span th:text="${#numbers.formatDecimal(payment.summary.fee,1,2)}">0.00</span> <span class="ccy" th:text="${payment.summary.currency}">GBP</span></dd>
+                                    <dt>FX rate</dt>
+                                    <dd th:text="${#numbers.formatDecimal(payment.summary.fxRate,1,4)}">1.0000</dd>
+                                    <dt>Settlement</dt>
+                                    <dd class="amount"><span th:text="${#numbers.formatDecimal(payment.summary.settlementAmount,1,2)}">0.00</span> <span class="ccy" th:text="${payment.summary.settlementCurrency}">GBP</span></dd>
+                                    <dt>Debit total</dt>
+                                    <dd class="amount">
+                                        <span th:text="${#numbers.formatDecimal(payment.summary.amount + payment.summary.fee,1,2)}">0.00</span>
+                                        <span class="ccy" th:text="${payment.summary.currency}">GBP</span>
+                                    </dd>
+                                </dl>
+                            </div>
+                            <div class="card-foot">Fees and FX come from the bank's published schedules — they are never taken from a submission.</div>
+                        </div>
+                    </div>
+
+                    <div class="card" th:if="${payment.release != null}">
+                        <div class="card-head"><h2>Release record</h2></div>
+                        <div class="card-body">
+                            <dl class="kv">
+                                <dt>Core reference</dt><dd class="mono" th:text="${payment.release.coreRef != null ? payment.release.coreRef : '—'}">—</dd>
+                                <dt>Posted amount</dt><dd class="amount"><span th:text="${#numbers.formatDecimal(payment.release.postedAmount,1,2)}">0.00</span> <span class="ccy" th:text="${payment.summary.currency}">GBP</span></dd>
+                                <dt>Response code</dt><dd th:text="${payment.release.responseCode}">00</dd>
+                                <dt>Retry count</dt><dd th:text="${payment.release.retryCount}">0</dd>
+                                <dt>Investigation</dt>
+                                <dd>
+                                    <span class="badge neutral" th:text="${payment.release.investigationStatus}">NONE</span>
+                                    <span class="cell-sub" th:if="${payment.release.investigationNotes != null}" th:text="${payment.release.investigationNotes}">notes</span>
+                                </dd>
+                                <dt>Released at</dt>
+                                <dd th:if="${payment.release.releasedAt != null}" th:text="${#temporals.format(payment.release.releasedAt,'dd MMM yyyy · HH:mm')}">released</dd>
+                                <dd th:if="${payment.release.releasedAt == null}">—</dd>
+                            </dl>
+                        </div>
+                    </div>
+
+                    <div class="card" th:if="${! #lists.isEmpty(payment.approvals)}">
+                        <div class="card-head"><h2>Approval history</h2></div>
+                        <div class="card-body flush">
+                            <div class="table-wrap">
+                                <table class="data">
+                                    <thead><tr><th>Checker</th><th>Decision</th><th>Limit applied</th><th>Dual-approval half</th><th>Comment</th><th>When</th></tr></thead>
+                                    <tbody>
+                                    <tr th:each="a : ${payment.approvals}">
+                                        <td th:text="${a.actorName}">checker</td>
+                                        <td><span class="badge" th:classappend="${a.decision == 'APPROVED' ? 'success' : (a.decision == 'REJECTED' ? 'danger' : 'neutral')}" th:text="${a.decision}">decision</span></td>
+                                        <td class="amount"><span th:text="${#numbers.formatDecimal(a.limitApplied,1,2)}">0</span></td>
+                                        <td th:text="${a.halfRequired ? 'yes' : '—'}">—</td>
+                                        <td th:text="${a.comment != null ? a.comment : '—'}">—</td>
+                                        <td class="nowrap" th:text="${#temporals.format(a.actedAt,'dd MMM · HH:mm')}">when</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card" th:if="${! #lists.isEmpty(payment.amendments)}">
+                        <div class="card-head"><h2>Amendment history</h2></div>
+                        <div class="card-body">
+                            <ul class="timeline">
+                                <li th:each="m : ${payment.amendments}">
+                                    <span class="dot"></span>
+                                    <div class="tl-time" th:text="${#temporals.format(m.changedAt,'dd MMM · HH:mm')}">time</div>
+                                    <div class="tl-title" th:text="${m.actorName}">actor</div>
+                                    <div class="tl-sub" th:each="f : ${m.changedFields}"
+                                         th:text="${f.field + ': ' + f.from + ' → ' + f.to}">change</div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ======= timeline ======= -->
+                <section id="timeline" data-tab-panel hidden>
+                    <div class="card">
+                        <div class="card-head"><h2>Audit timeline</h2></div>
+                        <div class="card-body">
+                            <div th:if="${#lists.isEmpty(payment.timeline)}" class="empty-state"><h3>No events yet</h3></div>
+                            <ul class="timeline" th:unless="${#lists.isEmpty(payment.timeline)}">
+                                <li th:each="e : ${payment.timeline}" th:classappend="${e.action == 'PAYMENT_APPROVED' ? 'approved' : (e.action == 'PAYMENT_REJECTED' or e.action == 'PAYMENT_RELEASE_FAILED' ? 'rejected' : '')}">
+                                    <span class="dot"></span>
+                                    <div class="tl-time" th:text="${#temporals.format(e.eventAt,'dd MMM yyyy · HH:mm')}">time</div>
+                                    <div class="tl-title" th:text="${e.action + ' · ' + e.actorName}">action</div>
+                                    <div class="tl-sub" th:text="${e.summary}">summary</div>
+                                    <div class="tl-basis" th:text="${'basis: ' + e.authBasis}">basis</div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ======= comments ======= -->
+                <section id="comments" data-tab-panel hidden>
+                    <div class="card">
+                        <div class="card-head"><h2>Comments</h2></div>
+                        <div class="card-body">
+                            <div th:if="${#lists.isEmpty(payment.comments)}" class="empty-state">
+                                <h3>No comments yet</h3>
+                                <p>Team members can add notes visible to the whole company workspace.</p>
+                            </div>
+                            <div th:each="c : ${payment.comments}" class="card mb-1" style="box-shadow:none">
+                                <div class="card-body">
+                                    <div class="flex-between">
+                                        <strong th:text="${c.authorName}">author</strong>
+                                        <span class="small muted" th:text="${#temporals.format(c.createdAt,'dd MMM · HH:mm')}">time</span>
+                                    </div>
+                                    <p class="mb-0 mt-1" th:utext="${c.text}">text</p>
+                                </div>
+                            </div>
+                            <form method="post" th:action="@{/payments/{id}/comments(id=${payment.summary.id})}" class="mt-2"
+                                  sec:authorize="hasAnyRole('company_maker','company_checker','company_admin')">
+                                <div class="field">
+                                    <label for="comment-text">Add a comment</label>
+                                    <textarea id="comment-text" name="text" maxlength="1000" required></textarea>
+                                </div>
+                                <div class="form-actions">
+                                    <button class="btn btn-primary" type="submit">Add comment</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ======= amend ======= -->
+                <section id="amend" data-tab-panel hidden th:if="${payment.approvalContext.canAmend}">
+                    <div class="card">
+                        <div class="card-head"><h2>Amend and return to draft</h2></div>
+                        <div class="card-body">
+                            <div class="alert warning">
+                                <svg class="alert-icon" width="18" height="18"><use href="#icon-warning"/></svg>
+                                <span>The checker returned this payment. Amend the fields below, then submit it again for approval.</span>
+                            </div>
+                            <form method="post" th:action="@{/payments/{id}/amend(id=${payment.summary.id})}">
+                                <div class="form-grid">
+                                    <div class="field">
+                                        <label for="am-amount">Amount</label>
+                                        <input type="number" step="0.01" min="0.01" id="am-amount" name="amount" th:value="${payment.summary.amount}">
+                                    </div>
+                                    <div class="field">
+                                        <label for="am-value-date">Value date</label>
+                                        <input type="date" id="am-value-date" name="valueDate" th:value="${payment.summary.valueDate}">
+                                    </div>
+                                    <div class="field span-2">
+                                        <label for="am-reference">Reference</label>
+                                        <input type="text" id="am-reference" name="reference" maxlength="140" th:value="${payment.summary.reference}">
+                                    </div>
+                                </div>
+                                <div class="form-actions">
+                                    <button class="btn btn-primary" type="submit">Save amendment (back to draft)</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+</div>
+<footer th:replace="~{fragments/layout :: scripts}"></footer>
+</body>
+</html>

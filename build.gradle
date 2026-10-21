@@ -1,0 +1,41 @@
+// Corporate Payments Portal — multi-module build.
+// Tiers: portal (channel), payment-api (decision), core-mock (vendor-core stub).
+// Support module: batch (Spring Batch jobs).
+plugins {
+    id 'io.spring.dependency-management' version '1.1.7' apply false
+    id 'org.springframework.boot' version '3.4.5' apply false
+}
+
+allprojects {
+    group = 'com.northbridge.corp'
+    version = '1.0.0'
+}
+
+subprojects {
+    apply plugin: 'java'
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+        options.compilerArgs += ['-parameters']
+    }
+
+    tasks.withType(Test).configureEach {
+        useJUnitPlatform()
+        testLogging {
+            events 'failed', 'skipped'
+            exceptionFormat 'full'
+        }
+    }
+
+    // Consistent, reproducible archives.
+    tasks.withType(AbstractArchiveTask).configureEach {
+        preserveFileTimestamps = false
+        reproducibleFileOrder = true
+    }
+}

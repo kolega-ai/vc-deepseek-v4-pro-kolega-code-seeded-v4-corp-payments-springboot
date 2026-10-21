@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Invite user')}"></head>
+<body>
+<th:block th:replace="~{fragments/layout :: icons}"></th:block>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: aside}"></aside>
+    <div class="main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+        <main class="content">
+            <div class="flash-area" th:if="${success != null || error != null}">
+                <div class="alert success" th:if="${success != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-check"/></svg>
+                    <span th:text="${success}">Done.</span>
+                </div>
+                <div class="alert danger" th:if="${error != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-warning"/></svg>
+                    <span th:text="${error}">Error.</span>
+                </div>
+            </div>
+
+            <div class="page-head">
+                <div>
+                    <div class="crumbs"><a th:href="@{/company/users}">Company users</a> · Invite</div>
+                    <h1>Invite user</h1>
+                    <p class="page-sub">They'll receive a single-use link to set their name and password.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" th:action="@{/company/users/invite}">
+                        <div class="form-grid">
+                            <div class="field">
+                                <label for="full-name">Full name</label>
+                                <input type="text" id="full-name" name="fullName" maxlength="200"
+                                       placeholder="Dana Whitfield" required>
+                            </div>
+                            <div class="field">
+                                <label for="email">Work email</label>
+                                <input type="email" id="email" name="email" autocomplete="off"
+                                       placeholder="dana@acme.example" required>
+                            </div>
+                            <div class="field">
+                                <label for="role">Role</label>
+                                <select id="role" name="role" required>
+                                    <option value="company_maker">company_maker — creates payments</option>
+                                    <option value="company_checker">company_checker — approves payments</option>
+                                    <option value="company_admin">company_admin — manages users &amp; beneficiaries</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label for="approval-limit">Approval limit</label>
+                                <input type="number" step="0.01" min="0" id="approval-limit" name="approvalLimit" placeholder="0.00">
+                                <p class="help" th:if="${companyLimit != null}">
+                                    Checkers only. Cannot exceed the company daily limit
+                                    (<span th:text="${#numbers.formatDecimal(companyLimit,1,2)}">0.00</span>).
+                                </p>
+                                <p class="help" th:if="${companyLimit == null}">
+                                    Checkers only. Cannot exceed the company daily limit.
+                                </p>
+                            </div>
+                            <div class="field span-2">
+                                <p class="small muted mt-0">Account access — leave empty to grant access to all company accounts.</p>
+                                <div class="mt-1" th:each="a : ${accounts}">
+                                    <label class="check-row">
+                                        <input type="checkbox" name="accountIds" th:value="${a.id}">
+                                        <span class="mono" th:text="${a.accountNumber + ' · ' + a.currency}">20301001 · GBP</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <a class="btn btn-ghost" th:href="@{/company/users}">Cancel</a>
+                            <button class="btn btn-primary" type="submit">
+                                <svg width="15" height="15"><use href="#icon-plus"/></svg> Send invitation
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<footer th:replace="~{fragments/layout :: scripts}"></footer>
+</body>
+</html>

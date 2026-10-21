@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="en">
+<head th:replace="~{fragments/layout :: head('Audit log')}"></head>
+<body>
+<th:block th:replace="~{fragments/layout :: icons}"></th:block>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: aside}"></aside>
+    <div class="main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+        <main class="content">
+            <div class="flash-area" th:if="${success != null || error != null}">
+                <div class="alert success" th:if="${success != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-check"/></svg>
+                    <span th:text="${success}">Done.</span>
+                </div>
+                <div class="alert danger" th:if="${error != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-warning"/></svg>
+                    <span th:text="${error}">Error.</span>
+                </div>
+            </div>
+
+            <div class="page-head">
+                <div>
+                    <div class="crumbs"><a th:href="@{/admin}">Administration</a> · Audit log</div>
+                    <h1>Audit log</h1>
+                    <p class="page-sub">Every privileged decision and mutation, across all companies.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <form class="filters" method="get" th:action="@{/admin/audit}">
+                    <div class="field">
+                        <label for="f-action">Action</label>
+                        <input type="text" id="f-action" name="action" placeholder="e.g. PAYMENT_APPROVED"
+                               th:value="${filters['action']}" style="min-width:180px">
+                    </div>
+                    <div class="field">
+                        <label for="f-resource">Resource type</label>
+                        <select id="f-resource" name="resourceType" style="min-width:150px">
+                            <option value="">All types</option>
+                            <option th:each="t : ${ {'payment','beneficiary','user','company','account','release','reversal','bulk_file','webhook_config'} }"
+                                    th:value="${t}" th:text="${t}"
+                                    th:selected="${filters['resourceType'] == t}">type</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="f-company">Company</label>
+                        <select id="f-company" name="companyId" style="min-width:170px">
+                            <option value="">All companies</option>
+                            <option th:each="c : ${companies}" th:value="${c.id}" th:text="${c.legalName}"
+                                    th:selected="${filters['companyId'] != null and filters['companyId'].toString() == c.id.toString()}">company</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="f-from">From</label>
+                        <input type="date" id="f-from" name="from" th:value="${filters['from']}">
+                    </div>
+                    <div class="field">
+                        <label for="f-to">To</label>
+                        <input type="date" id="f-to" name="to" th:value="${filters['to']}">
+                    </div>
+                    <div class="field">
+                        <button class="btn btn-primary" type="submit">
+                            <svg width="15" height="15"><use href="#icon-search"/></svg> Filter
+                        </button>
+                    </div>
+                </form>
+
+                <div class="card-body flush">
+                    <div th:if="${#lists.isEmpty(auditPage.content)}" class="empty-state">
+                        <div class="empty-icon">
+                            <svg width="24" height="24"><use href="#icon-audit"/></svg>
+                        </div>
+                        <h3>No audit events match these filters</h3>
+                        <p>Try widening the date range or clearing the filters.</p>
+                    </div>
+                    <div class="table-wrap" th:unless="${#lists.isEmpty(auditPage.content)}">
+                        <table class="data">
+                            <thead>
+                            <tr>
+                                <th>When</th><th>Actor</th><th>Action</th><th>Resource</th>
+                                <th>Summary</th><th>Auth basis</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="e : ${auditPage.content}">
+                                <td class="nowrap" th:text="${#temporals.format(e.eventAt,'dd MMM · HH:mm')}">time</td>
+                                <td>
+                                    <span class="cell-strong" th:text="${e.actorName}">actor</span>
+                                    <span class="cell-sub" th:text="${e.actorRole}">role</span>
+                                </td>
+                                <td><strong th:text="${e.action}">action</strong></td>
+                                <td>
+                                    <span th:text="${e.resourceType}">type</span>
+                                    <span class="cell-sub mono" th:if="${e.resourceRef != null}" th:text="${e.resourceRef}">ref</span>
+                                </td>
+                                <td th:text="${e.summary}">summary</td>
+                                <td>
+                                    <span class="small muted mono" th:if="${e.authBasis != null}" th:text="${e.authBasis}">basis</span>
+                                    <span class="small muted" th:if="${e.authBasis == null}">—</span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="pagination" th:if="${auditPage.totalPages > 1}">
+                    <a th:if="${auditPage.page > 0}"
+                       th:href="@{/admin/audit(action=${filters['action']},resourceType=${filters['resourceType']},companyId=${filters['companyId']},from=${filters['from']},to=${filters['to']},page=${auditPage.page - 1})}">‹</a>
+                    <span class="disabled" th:if="${auditPage.page == 0}">‹</span>
+                    <span class="current" th:text="${auditPage.page + 1}">1</span>
+                    <span class="muted">/ <span th:text="${auditPage.totalPages}">1</span></span>
+                    <a th:if="${auditPage.page < auditPage.totalPages - 1}"
+                       th:href="@{/admin/audit(action=${filters['action']},resourceType=${filters['resourceType']},companyId=${filters['companyId']},from=${filters['from']},to=${filters['to']},page=${auditPage.page + 1})}">›</a>
+                    <span class="disabled" th:if="${auditPage.page >= auditPage.totalPages - 1}">›</span>
+                </div>
+
+                <div class="card-foot" th:if="${! #lists.isEmpty(auditPage.content)}">
+                    <span th:text="${auditPage.totalElements} + ' event(s) total'">0 events</span>
+                    · Audit events are append-only. No role can modify or delete them.
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<footer th:replace="~{fragments/layout :: scripts}"></footer>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('API keys')}"></head>
+<body>
+<th:block th:replace="~{fragments/layout :: icons}"></th:block>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: aside}"></aside>
+    <div class="main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+        <main class="content">
+            <div class="flash-area" th:if="${success != null || error != null || newKey != null}">
+                <div class="alert success" th:if="${success != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-check"/></svg>
+                    <span th:text="${success}">Done.</span>
+                </div>
+                <div class="alert danger" th:if="${error != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-warning"/></svg>
+                    <span th:text="${error}">Error.</span>
+                </div>
+                <div class="alert warning" th:if="${newKey != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-key"/></svg>
+                    <span>
+                        <strong>Copy your new API key now — it will not be shown again.</strong>
+                        <code class="mono" style="word-break:break-all" th:text="${newKey}">key</code>
+                        <button class="btn btn-outline btn-sm" type="button" th:attr="data-copy=${newKey}">Copy</button>
+                    </span>
+                </div>
+            </div>
+
+            <div class="page-head">
+                <div>
+                    <div class="crumbs"><a th:href="@{/dashboard}">Workspace</a> · Company · API keys</div>
+                    <h1>API keys</h1>
+                    <p class="page-sub">Company-scoped keys for the JSON payment-status endpoint. Only a hash of each key is stored.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-head"><h2>Create an API key</h2></div>
+                <div class="card-body">
+                    <form method="post" th:action="@{/api-keys}">
+                        <div class="form-inline">
+                            <div class="field" style="flex:1;min-width:260px">
+                                <label for="key-name">Key name</label>
+                                <input type="text" id="key-name" name="name" maxlength="100"
+                                       placeholder="e.g. ERP integration" required>
+                            </div>
+                            <button class="btn btn-primary" type="submit">
+                                <svg width="15" height="15"><use href="#icon-plus"/></svg> Create key
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-2">
+                <div class="card-head"><h2>Existing keys</h2></div>
+                <div class="card-body flush">
+                    <div th:if="${#lists.isEmpty(keys)}" class="empty-state">
+                        <div class="empty-icon"><svg width="24" height="24"><use href="#icon-key"/></svg></div>
+                        <h3>No API keys yet</h3>
+                        <p>Create a key to query payment statuses from your own systems.</p>
+                    </div>
+                    <div class="table-wrap" th:unless="${#lists.isEmpty(keys)}">
+                        <table class="data">
+                            <thead>
+                            <tr><th>Name</th><th>Key prefix</th><th>Status</th><th>Last used</th><th>Created</th><th></th></tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="k : ${keys}">
+                                <td class="cell-strong" th:text="${k.name}">name</td>
+                                <td class="mono" th:text="${k.keyPrefix + '…'}">prefix</td>
+                                <td>
+                                    <span class="badge" th:classappend="${k.status == 'ACTIVE'} ? 'success' : 'danger'"
+                                          th:text="${k.status}">ACTIVE</span>
+                                </td>
+                                <td th:text="${k.lastUsedAt != null ? #temporals.format(k.lastUsedAt,'dd MMM · HH:mm') : 'never'}">never</td>
+                                <td th:text="${#temporals.format(k.createdAt,'dd MMM yyyy')}">date</td>
+                                <td class="right">
+                                    <form th:if="${k.status == 'ACTIVE'}" method="post" th:action="@{/api-keys/{id}/revoke(id=${k.id})}"
+                                          data-confirm="Revoke this API key? Existing integrations will stop working immediately.">
+                                        <button class="btn btn-danger-outline btn-sm" type="submit">Revoke</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-2">
+                <div class="card-head"><h2>Using the JSON endpoint</h2></div>
+                <div class="card-body">
+                    <p class="small muted">Query any payment of your company by its reference. The company scope comes
+                        from the key itself and is re-enforced by the decision tier.</p>
+                    <pre class="mono" style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;overflow-x:auto"><code>curl -H "X-Api-Key: &lt;your key&gt;" \
+     http://localhost:8080/api/v1/payments/PY-ACM-1010</code></pre>
+                    <p class="small muted mb-0">Responses are JSON: <code>{ "paymentRef": "...", "status": "RELEASED", "amount": 1250.00, ... }</code>.
+                        Every lookup is recorded as a privileged read in the audit log.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<footer th:replace="~{fragments/layout :: scripts}"></footer>
+</body>
+</html>

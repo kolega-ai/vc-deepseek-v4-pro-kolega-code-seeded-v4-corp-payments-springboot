@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Approval queue')}"></head>
+<body>
+<th:block th:replace="~{fragments/layout :: icons}"></th:block>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: aside}"></aside>
+    <div class="main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+        <main class="content">
+            <div class="flash-area" th:if="${success != null || error != null}">
+                <div class="alert success" th:if="${success != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-check"/></svg>
+                    <span th:text="${success}">Done.</span>
+                </div>
+                <div class="alert danger" th:if="${error != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-warning"/></svg>
+                    <span th:text="${error}">Error.</span>
+                </div>
+            </div>
+
+            <div class="page-head">
+                <div>
+                    <div class="crumbs"><a th:href="@{/dashboard}">Workspace</a> · Approval queue</div>
+                    <h1>Approval queue</h1>
+                    <p class="page-sub">Payments waiting for your decision.</p>
+                </div>
+            </div>
+
+            <div class="action-bar">
+                <div class="action-note">
+                    Your approval limit:
+                    <strong th:text="${#numbers.formatDecimal(myLimit,1,2)} + ' ' + ${utilisation.currency}">0.00 GBP</strong> ·
+                    remaining company headroom today:
+                    <strong th:text="${#numbers.formatDecimal(utilisation.headroom,1,2)} + ' of ' + ${#numbers.formatDecimal(utilisation.limit,1,2)} + ' ' + ${utilisation.currency}">0 of 0 GBP</strong>
+                </div>
+            </div>
+
+            <div class="grid grid-2">
+                <div class="stat-card accent-gold">
+                    <div class="stat-label">Awaiting my decision</div>
+                    <div class="stat-value" th:text="${#lists.size(awaiting)}">0</div>
+                    <div class="stat-foot">Payments you can approve or reject</div>
+                </div>
+                <div class="stat-card accent-info">
+                    <div class="stat-label">Daily limit utilisation</div>
+                    <div class="stat-value">
+                        <span class="amount" th:text="${#numbers.formatDecimal(utilisation.used,1,2)}">0.00</span>
+                        <span class="ccy" th:text="${utilisation.currency}">GBP</span>
+                    </div>
+                    <div class="stat-foot">
+                        of <span th:text="${#numbers.formatDecimal(utilisation.limit,1,2)}">0</span>
+                        <span th:text="${utilisation.currency}">GBP</span>
+                    </div>
+                    <div class="progress mt-1" th:classappend="${utilisation.percent > 80 ? 'danger' : (utilisation.percent > 60 ? 'warn' : '')}">
+                        <span th:style="'width:' + ${utilisation.percent} + '%'"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-2">
+                <div class="card-head"><h2>Payments awaiting approval</h2></div>
+                <div class="card-body flush">
+                    <div th:if="${#lists.isEmpty(awaiting)}" class="empty-state">
+                        <div class="empty-icon">
+                            <svg width="24" height="24"><use href="#icon-approvals"/></svg>
+                        </div>
+                        <h3>Queue is clear</h3>
+                        <p>Nothing is waiting for your decision right now.</p>
+                    </div>
+                    <div class="table-wrap" th:unless="${#lists.isEmpty(awaiting)}">
+                        <table class="data">
+                            <thead>
+                            <tr>
+                                <th>Reference</th><th>Beneficiary</th><th>Value date</th>
+                                <th class="num">Amount</th><th>Status</th><th class="num">Approvals</th><th class="right">Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="p : ${awaiting}">
+                                <td>
+                                    <span class="cell-strong" th:text="${p.ref}">REF</span>
+                                    <span class="cell-sub" th:text="${'by ' + p.createdByName}">by maker</span>
+                                    <span class="cell-sub" th:if="${p.bulkFileRef != null}" th:text="'Bulk · ' + ${p.bulkFileRef}">bulk</span>
+                                </td>
+                                <td th:text="${p.beneficiaryName}">Beneficiary</td>
+                                <td class="nowrap" th:text="${#temporals.format(p.valueDate,'dd MMM yyyy')}">date</td>
+                                <td class="num amount">
+                                    <span th:text="${#numbers.formatDecimal(p.amount,1,2)}">0.00</span>
+                                    <span class="ccy" th:text="${p.currency}">GBP</span>
+                                    <span class="cell-sub" th:text="${'fee ' + #numbers.formatDecimal(p.fee,1,2)}">fee 0.00</span>
+                                </td>
+                                <td>
+                                    <span class="badge" th:classappend="${({'RELEASED':'success','APPROVED':'info','PENDING_APPROVAL':'warning','PARTIALLY_APPROVED':'warning','DRAFT':'neutral','REJECTED':'danger','RETURNED':'neutral','FAILED':'danger','QUEUED_FOR_RELEASE':'info','REVERSED':'neutral'})[p.status] ?: 'neutral'}"
+                                          th:text="${p.status}">status</span>
+                                </td>
+                                <td class="num" th:text="${p.approvalCount}">0</td>
+                                <td class="right nowrap">
+                                    <div class="flex gap-1 wrap" style="justify-content:flex-end">
+                                        <a class="btn btn-primary btn-sm" th:href="@{/payments/{id}(id=${p.id})}">Review &amp; decide</a>
+                                        <form method="post" th:action="@{/payments/{id}/approve(id=${p.id})}" class="form-inline">
+                                            <input type="text" name="comment" placeholder="Comment (optional)" aria-label="Approval comment" style="min-width:120px">
+                                            <button class="btn btn-outline btn-sm" type="submit">Approve</button>
+                                        </form>
+                                        <form method="post" th:action="@{/payments/{id}/reject(id=${p.id})}"
+                                              data-confirm="Reject this payment? This cannot be undone.">
+                                            <button class="btn btn-danger-outline btn-sm" type="submit">Reject</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-foot" th:if="${! #lists.isEmpty(awaiting)}">
+                    <span th:text="${#lists.size(awaiting)} + ' payment(s) awaiting your decision'">0 payments</span>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<footer th:replace="~{fragments/layout :: scripts}"></footer>
+</body>
+</html>

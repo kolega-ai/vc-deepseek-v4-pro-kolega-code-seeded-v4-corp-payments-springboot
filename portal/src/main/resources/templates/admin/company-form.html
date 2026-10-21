@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="en">
+<head th:replace="~{fragments/layout :: head('Onboard company')}"></head>
+<body>
+<th:block th:replace="~{fragments/layout :: icons}"></th:block>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: aside}"></aside>
+    <div class="main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+        <main class="content">
+            <div class="flash-area" th:if="${success != null || error != null}">
+                <div class="alert success" th:if="${success != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-check"/></svg>
+                    <span th:text="${success}">Done.</span>
+                </div>
+                <div class="alert danger" th:if="${error != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-warning"/></svg>
+                    <span th:text="${error}">Error.</span>
+                </div>
+            </div>
+
+            <div class="page-head">
+                <div>
+                    <div class="crumbs"><a th:href="@{/admin}">Administration</a> · <a th:href="@{/admin/companies}">Companies</a> · New</div>
+                    <h1>Onboard company</h1>
+                    <p class="page-sub">Create the corporate entity, then provision accounts and invite administrators.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-head"><h2>Company details</h2></div>
+                <div class="card-body">
+                    <form method="post" th:action="@{/admin/companies}">
+                        <div class="form-grid">
+                            <div class="field">
+                                <label for="cf-legal-name">Legal name</label>
+                                <input type="text" id="cf-legal-name" name="legalName" required>
+                            </div>
+                            <div class="field">
+                                <label for="cf-registration">Registration number</label>
+                                <input type="text" id="cf-registration" name="registrationNumber" required>
+                                <div class="help">Company registration number</div>
+                            </div>
+                            <div class="field">
+                                <label for="cf-currency">Base currency</label>
+                                <select id="cf-currency" name="baseCurrency">
+                                    <option value="GBP">GBP</option>
+                                    <option value="EUR">EUR</option>
+                                    <option value="USD">USD</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label for="cf-limit">Daily limit</label>
+                                <input type="number" step="0.01" min="1" id="cf-limit" name="dailyLimit" required>
+                                <div class="help">Company-level daily limit in the base currency</div>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <a class="btn btn-outline" th:href="@{/admin/companies}">Cancel</a>
+                            <button class="btn btn-primary" type="submit">
+                                <svg width="15" height="15"><use href="#icon-plus"/></svg> Onboard company
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<footer th:replace="~{fragments/layout :: scripts}"></footer>
+</body>
+</html>

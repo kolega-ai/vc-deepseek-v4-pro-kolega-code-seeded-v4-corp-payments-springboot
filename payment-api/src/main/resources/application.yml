@@ -1,0 +1,58 @@
+server:
+  port: ${SERVER_PORT:8081}
+  error:
+    include-message: never
+    include-stacktrace: always
+
+spring:
+  application:
+    name: payment-api
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/payment_api}
+    username: ${SPRING_DATASOURCE_USERNAME:payment_api}
+    password: ${SPRING_DATASOURCE_PASSWORD:paymentapi_dev_password}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+  threads:
+    virtual:
+      enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+app:
+  security:
+    tier-token-secret: ${TIER_TOKEN_SECRET:}
+    core-scope-secret: ${CORE_SCOPE_SECRET:}
+    internal-service-token: ${INTERNAL_SERVICE_TOKEN:}
+  core:
+    base-url: ${CORE_MOCK_BASE_URL:http://localhost:8082}
+    api-key: ${CORE_MOCK_API_KEY:}
+  assistant:
+    messages-base-url: ${ASSISTANT_MESSAGES_BASE_URL:https://api.anthropic.com}
+    messages-api-key: ${ASSISTANT_MESSAGES_API_KEY:}
+    model: ${ASSISTANT_MODEL:claude-3-5-sonnet-latest}
+    settlement-key: ${ASSISTANT_SETTLEMENT_KEY:}
+
+logging:
+  level:
+    root: INFO
+    com.northbridge.paymentapi: INFO

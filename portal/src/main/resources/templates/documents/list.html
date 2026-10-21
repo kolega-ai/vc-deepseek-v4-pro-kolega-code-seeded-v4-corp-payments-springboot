@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="en">
+<head th:replace="~{fragments/layout :: head('Documents')}"></head>
+<body>
+<th:block th:replace="~{fragments/layout :: icons}"></th:block>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: aside}"></aside>
+    <div class="main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+        <main class="content">
+            <div class="flash-area" th:if="${success != null || error != null}">
+                <div class="alert success" th:if="${success != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-check"/></svg>
+                    <span th:text="${success}">Done.</span>
+                </div>
+                <div class="alert danger" th:if="${error != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-warning"/></svg>
+                    <span th:text="${error}">Error.</span>
+                </div>
+            </div>
+
+            <div class="page-head">
+                <div>
+                    <div class="crumbs"><a th:href="@{/dashboard}">Workspace</a> · Documents</div>
+                    <h1>Documents</h1>
+                    <p class="page-sub">Supporting files attached to payments and bulk uploads.</p>
+                </div>
+            </div>
+
+            <nav class="tabs">
+                <a class="tab" th:classappend="${selectedCategory == null ? 'active' : ''}" th:href="@{/documents}">All</a>
+                <a class="tab" th:classappend="${selectedCategory == c.name() ? 'active' : ''}"
+                   th:href="@{/documents(category=${c.name()})}"
+                   th:each="c : ${categories}" th:text="${c.name()}">category</a>
+            </nav>
+
+            <div class="card" sec:authorize="hasAnyRole('company_maker','company_checker','company_admin')">
+                <div class="card-head"><h2>Upload document</h2></div>
+                <div class="card-body">
+                    <form method="post" th:action="@{/documents/upload}" enctype="multipart/form-data">
+                        <div class="form-grid">
+                            <div class="field">
+                                <label for="up-category">Category</label>
+                                <select id="up-category" name="category" required>
+                                    <option th:each="c : ${categories}" th:value="${c.name()}" th:text="${c.name()}">category</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label for="up-payment">Payment (optional)</label>
+                                <input type="text" id="up-payment" name="paymentId" placeholder="Payment UUID (optional)">
+                                <div class="help">Optional payment reference (UUID)</div>
+                            </div>
+                            <div class="field span-2">
+                                <label for="up-file">File</label>
+                                <input type="file" id="up-file" name="file" required>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-primary" type="submit">
+                                <svg width="15" height="15"><use href="#icon-upload"/></svg> Upload
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-2">
+                <div class="card-head"><h2>Inspect stored file</h2></div>
+                <div class="card-body">
+                    <form method="get" th:action="@{/documents/inspect}">
+                        <div class="field">
+                            <label for="doc-ref">Stored reference</label>
+                            <input type="text" id="doc-ref" name="docRef" placeholder="Stored file reference">
+                            <div class="help">Shows the size and timestamps the bank holds for that reference.</div>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-outline" type="submit">Inspect metadata</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-2">
+                <div class="card-head"><h2>Files</h2></div>
+                <div class="card-body flush">
+                    <div th:if="${#lists.isEmpty(documents)}" class="empty-state">
+                        <div class="empty-icon">
+                            <svg width="24" height="24"><use href="#icon-documents"/></svg>
+                        </div>
+                        <h3>No documents here</h3>
+                        <p th:text="${selectedCategory != null ? 'No documents in this category yet.' : 'Uploaded documents appear here.'}">none</p>
+                    </div>
+                    <div class="table-wrap" th:unless="${#lists.isEmpty(documents)}">
+                        <table class="data">
+                            <thead>
+                            <tr><th>File</th><th>Category</th><th>Size</th><th>Uploaded</th><th></th></tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="d : ${documents}">
+                                <td>
+                                    <span class="cell-strong" th:text="${d.fileName}">file</span>
+                                    <span class="cell-sub mono" th:if="${d.paymentId != null}" th:text="${d.paymentId}">payment</span>
+                                </td>
+                                <td>
+                                    <span class="badge" th:classappend="${({'PAYMENT_SUPPORT':'info','BULK_ERROR_REPORT':'warning','IDENTITY_VERIFICATION':'neutral'})[d.category.name()] ?: 'neutral'}"
+                                          th:text="${d.category.name()}">category</span>
+                                </td>
+                                <td class="nowrap muted"
+                                    th:text="${d.sizeBytes < 1024 ? d.sizeBytes + ' B' : (d.sizeBytes < 1048576 ? #numbers.formatInteger(d.sizeBytes / 1024,1) + ' KB' : #numbers.formatDecimal(d.sizeBytes / 1048576,1,1) + ' MB')}">size</td>
+                                <td class="nowrap" th:text="${#temporals.format(d.createdAt,'dd MMM yyyy')}">date</td>
+                                <td class="right">
+                                    <a class="btn btn-ghost btn-sm"
+                                       th:if="${d.category.name() == 'PAYMENT_SUPPORT'}"
+                                       th:href="@{/documents/{id}/remittance(id=${d.id})}">Remittance</a>
+                                    <a class="btn btn-outline btn-sm" th:href="@{/documents/{id}/download(id=${d.id})}">
+                                        <svg width="14" height="14"><use href="#icon-download"/></svg> Download
+                                    </a>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-foot" th:if="${! #lists.isEmpty(documents)}">
+                    Downloads are logged as privileged reads.
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<footer th:replace="~{fragments/layout :: scripts}"></footer>
+</body>
+</html>

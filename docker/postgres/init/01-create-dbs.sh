@@ -1,0 +1,12 @@
+#!/bin/sh
+# Creates the per-tier databases and roles used by the Corporate Payments Portal.
+set -e
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname postgres <<-EOSQL
+    CREATE ROLE ${PORTAL_DB_USER} LOGIN PASSWORD '${PORTAL_DB_PASSWORD}';
+    CREATE ROLE ${PAYMENT_API_DB_USER} LOGIN PASSWORD '${PAYMENT_API_DB_PASSWORD}';
+    CREATE ROLE ${CORE_MOCK_DB_USER} LOGIN PASSWORD '${CORE_MOCK_DB_PASSWORD}';
+    CREATE DATABASE portal OWNER ${PORTAL_DB_USER};
+    CREATE DATABASE payment_api OWNER ${PAYMENT_API_DB_USER};
+    CREATE DATABASE core_mock OWNER ${CORE_MOCK_DB_USER};
+EOSQL

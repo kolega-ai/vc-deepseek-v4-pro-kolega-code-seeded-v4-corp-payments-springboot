@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Payments')}"></head>
+<body>
+<th:block th:replace="~{fragments/layout :: icons}"></th:block>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: aside}"></aside>
+    <div class="main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+        <main class="content">
+            <div class="flash-area" th:if="${success != null || error != null}">
+                <div class="alert success" th:if="${success != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-check"/></svg>
+                    <span th:text="${success}">Done.</span>
+                </div>
+                <div class="alert danger" th:if="${error != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-warning"/></svg>
+                    <span th:text="${error}">Error.</span>
+                </div>
+            </div>
+
+            <div class="page-head">
+                <div>
+                    <div class="crumbs"><a th:href="@{/dashboard}">Workspace</a> · Payments</div>
+                    <h1>Payments</h1>
+                    <p class="page-sub">Search, filter and manage your company's payment instructions.</p>
+                </div>
+                <div class="flex gap-1 wrap">
+                    <a class="btn btn-outline" th:href="@{/exports/statement(status=${filters['status']},from=${filters['from']},to=${filters['to']},accountId=${filters['accountId']},beneficiaryId=${filters['beneficiaryId']},q=${filters['q']},minAmount=${filters['minAmount']},maxAmount=${filters['maxAmount']})}">
+                        <svg width="16" height="16"><use href="#icon-download"/></svg> Export CSV
+                    </a>
+                    <a class="btn btn-primary" sec:authorize="hasRole('company_maker')" th:href="@{/payments/new}">
+                        <svg width="16" height="16"><use href="#icon-plus"/></svg> New payment
+                    </a>
+                </div>
+            </div>
+
+            <div class="card">
+                <form class="filters" method="get" th:action="@{/payments}">
+                    <div class="field">
+                        <label for="f-status">Status</label>
+                        <select id="f-status" name="status" style="min-width:170px">
+                            <option value="">All statuses</option>
+                            <option th:each="s : ${statuses}" th:value="${s}" th:text="${s}"
+                                    th:selected="${filters['status'] == s}">status</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="f-from">From</label>
+                        <input type="date" id="f-from" name="from" th:value="${filters['from']}">
+                    </div>
+                    <div class="field">
+                        <label for="f-to">To</label>
+                        <input type="date" id="f-to" name="to" th:value="${filters['to']}">
+                    </div>
+                    <div class="field">
+                        <label for="f-account">Account</label>
+                        <select id="f-account" name="accountId" style="min-width:150px">
+                            <option value="">All accounts</option>
+                            <option th:each="a : ${accounts}" th:value="${a.id}"
+                                    th:text="${a.accountNumber + ' · ' + a.currency}"
+                                    th:selected="${filters['accountId'] != null and filters['accountId'] == a.id.toString()}">account</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="f-beneficiary">Beneficiary</label>
+                        <select id="f-beneficiary" name="beneficiaryId" style="min-width:170px">
+                            <option value="">All beneficiaries</option>
+                            <option th:each="b : ${beneficiaries}" th:value="${b.id}" th:text="${b.name}"
+                                    th:selected="${filters['beneficiaryId'] != null and filters['beneficiaryId'] == b.id.toString()}">beneficiary</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="f-min">Min amount</label>
+                        <input type="number" step="0.01" id="f-min" name="minAmount" th:value="${filters['minAmount']}" style="min-width:110px">
+                    </div>
+                    <div class="field">
+                        <label for="f-max">Max amount</label>
+                        <input type="number" step="0.01" id="f-max" name="maxAmount" th:value="${filters['maxAmount']}" style="min-width:110px">
+                    </div>
+                    <div class="field">
+                        <label for="f-q">Search</label>
+                        <input type="search" id="f-q" name="q" placeholder="Ref or reference…" th:value="${filters['q']}" style="min-width:170px">
+                    </div>
+                    <div class="field">
+                        <label for="f-sort">Sort</label>
+                        <select id="f-sort" name="sort">
+                            <option value="createdAt" th:selected="${filters['sort'] == 'createdAt'}">Created</option>
+                            <option value="valueDate" th:selected="${filters['sort'] == 'valueDate'}">Value date</option>
+                            <option value="amount" th:selected="${filters['sort'] == 'amount'}">Amount</option>
+                            <option value="ref" th:selected="${filters['sort'] == 'ref'}">Reference</option>
+                            <option value="status" th:selected="${filters['sort'] == 'status'}">Status</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <button class="btn btn-primary" type="submit">
+                            <svg width="15" height="15"><use href="#icon-search"/></svg> Filter
+                        </button>
+                    </div>
+                </form>
+
+                <div class="card-body flush">
+                    <div th:if="${#lists.isEmpty(payments)}" class="empty-state">
+                        <div class="empty-icon">
+                            <svg width="24" height="24"><use href="#icon-payments"/></svg>
+                        </div>
+                        <h3>No payments match these filters</h3>
+                        <p>Try widening the date range or clearing the status filter.</p>
+                    </div>
+                    <div class="table-wrap" th:unless="${#lists.isEmpty(payments)}">
+                        <table class="data">
+                            <thead>
+                            <tr>
+                                <th>Reference</th><th>Value date</th><th>Beneficiary</th><th>Debit account</th>
+                                <th class="num">Amount</th><th class="num">Fee</th><th>Status</th><th></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="p : ${payments}">
+                                <td>
+                                    <span class="cell-strong" th:text="${p.ref}">REF</span>
+                                    <span class="cell-sub" th:if="${p.bulkFileRef != null}" th:text="'Bulk · ' + ${p.bulkFileRef}">bulk</span>
+                                </td>
+                                <td class="nowrap" th:text="${#temporals.format(p.valueDate,'dd MMM yyyy')}">date</td>
+                                <td th:text="${p.beneficiaryName}">Beneficiary</td>
+                                <td class="mono" th:text="${p.debitAccountNumber}">acct</td>
+                                <td class="num amount">
+                                    <span th:text="${#numbers.formatDecimal(p.amount,1,2)}">0.00</span>
+                                    <span class="ccy" th:text="${p.currency}">GBP</span>
+                                </td>
+                                <td class="num muted" th:text="${#numbers.formatDecimal(p.fee,1,2)}">0.00</td>
+                                <td>
+                                    <span class="badge" th:classappend="${({'RELEASED':'success','APPROVED':'info','PENDING_APPROVAL':'warning','PARTIALLY_APPROVED':'warning','DRAFT':'neutral','REJECTED':'danger','RETURNED':'neutral','FAILED':'danger','QUEUED_FOR_RELEASE':'info','REVERSED':'neutral'})[p.status] ?: 'neutral'}"
+                                          th:text="${p.status}">status</span>
+                                </td>
+                                <td class="right nowrap">
+                                    <span class="badge warning" th:if="${p.awaitingMyApproval}">Your approval</span>
+                                    <a class="btn btn-outline btn-sm" th:href="@{/payments/{id}(id=${p.id})}">Open</a>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="pagination" th:if="${pageInfo.totalPages > 1}">
+                    <a th:if="${pageInfo.page > 0}"
+                       th:href="@{/payments(status=${filters['status']},from=${filters['from']},to=${filters['to']},accountId=${filters['accountId']},beneficiaryId=${filters['beneficiaryId']},q=${filters['q']},minAmount=${filters['minAmount']},maxAmount=${filters['maxAmount']},sort=${filters['sort']},dir=${filters['dir']},page=${pageInfo.page - 1})}">‹</a>
+                    <span class="disabled" th:if="${pageInfo.page == 0}">‹</span>
+                    <span class="current" th:text="${pageInfo.page + 1}">1</span>
+                    <span class="muted">/ <span th:text="${pageInfo.totalPages}">1</span></span>
+                    <a th:if="${pageInfo.page < pageInfo.totalPages - 1}"
+                       th:href="@{/payments(status=${filters['status']},from=${filters['from']},to=${filters['to']},accountId=${filters['accountId']},beneficiaryId=${filters['beneficiaryId']},q=${filters['q']},minAmount=${filters['minAmount']},maxAmount=${filters['maxAmount']},sort=${filters['sort']},dir=${filters['dir']},page=${pageInfo.page + 1})}">›</a>
+                    <span class="disabled" th:if="${pageInfo.page >= pageInfo.totalPages - 1}">›</span>
+                </div>
+                <div class="card-foot" th:if="${! #lists.isEmpty(payments)}">
+                    <span th:text="${pageInfo.totalElements} + ' payment(s) total'">0 payments</span>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<footer th:replace="~{fragments/layout :: scripts}"></footer>
+</body>
+</html>

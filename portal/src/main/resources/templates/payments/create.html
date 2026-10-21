@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('New payment')}"></head>
+<body>
+<th:block th:replace="~{fragments/layout :: icons}"></th:block>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: aside}"></aside>
+    <div class="main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+        <main class="content">
+            <div class="flash-area" th:if="${success != null || error != null}">
+                <div class="alert success" th:if="${success != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-check"/></svg>
+                    <span th:text="${success}">Done.</span>
+                </div>
+                <div class="alert danger" th:if="${error != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-warning"/></svg>
+                    <span th:text="${error}">Error.</span>
+                </div>
+            </div>
+
+            <div class="page-head">
+                <div>
+                    <div class="crumbs"><a th:href="@{/payments}">Payments</a> · New payment</div>
+                    <h1>New payment</h1>
+                    <p class="page-sub">Draft the instruction, then review the fee and FX before submitting.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-2">
+                <div class="card">
+                    <div class="card-head"><h2>Payment instruction</h2></div>
+                    <div class="card-body">
+                        <form method="post" th:action="@{/payments/preview}">
+                            <div class="form-grid">
+                                <div class="field span-2">
+                                    <label for="debit-account">Debit account</label>
+                                    <select id="debit-account" name="debitAccountId" required>
+                                        <option th:each="a : ${accounts}" th:value="${a.id}">
+                                            <span th:text="${a.accountNumber + ' · ' + a.currency}">20301001 · GBP</span>
+                                            <span th:if="${a.balance != null}"
+                                                  th:text="${' · balance ' + #numbers.formatDecimal(a.balance,1,2)}"> · balance 0.00</span>
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="field span-2">
+                                    <label for="beneficiary">Beneficiary</label>
+                                    <select id="beneficiary" name="beneficiaryId" required>
+                                        <option th:each="b : ${beneficiaries}" th:if="${b.payable}" th:value="${b.id}"
+                                                th:text="${b.name + ' · ' + b.accountNumber + ' · ' + b.bankCode + ' · ' + b.currency}">name · acct · bank · GBP</option>
+                                    </select>
+                                    <p class="help">
+                                        Only beneficiaries past their cooling period are listed.
+                                        <span th:if="${#lists.size(beneficiaries.?[payable == false]) > 0}"
+                                              th:text="${#lists.size(beneficiaries.?[payable == false]) + ' are still in cooling and hidden.'}">0 are hidden.</span>
+                                    </p>
+                                </div>
+                                <div class="field">
+                                    <label for="amount">Amount</label>
+                                    <input type="number" step="0.01" min="0.01" id="amount" name="amount"
+                                           placeholder="0.00" required>
+                                </div>
+                                <div class="field">
+                                    <label for="value-date">Value date</label>
+                                    <input type="date" id="value-date" name="valueDate"
+                                           th:min="${#temporals.format(#temporals.createToday(),'yyyy-MM-dd')}" required>
+                                </div>
+                                <div class="field span-2">
+                                    <label for="reference">Reference</label>
+                                    <input type="text" id="reference" name="reference" maxlength="140"
+                                           placeholder="INV-1042">
+                                    <p class="help">Appears on the statement. Up to 140 characters.</p>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn btn-primary" type="submit">
+                                    <svg width="15" height="15"><use href="#icon-search"/></svg> Review fee &amp; FX
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head"><h2>Fee schedule</h2></div>
+                    <div class="card-body">
+                        <dl class="kv">
+                            <dt>Domestic</dt>
+                            <dd>&pound;0.50 + 0.10% (min &pound;0.50, max &pound;25.00)</dd>
+                            <dt>SEPA</dt>
+                            <dd>&pound;1.50 + 0.25% (max &pound;50.00)</dd>
+                            <dt>SWIFT</dt>
+                            <dd>&pound;3.00 + 0.40% (max &pound;100.00)</dd>
+                        </dl>
+                        <div class="alert info mt-1">
+                            <svg class="alert-icon" width="18" height="18"><use href="#icon-info"/></svg>
+                            <span>Fees are computed server-side from the bank's published schedules — you'll see the exact charge on the next screen.</span>
+                        </div>
+                    </div>
+                    <div class="card-foot">The rail (domestic, SEPA or SWIFT) is chosen automatically from the beneficiary's bank code and currency.</div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<footer th:replace="~{fragments/layout :: scripts}"></footer>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+    <symbol id="icon-info" viewBox="0 0 24 24"><path fill="currentColor" d="M11 7h2v2h-2V7Zm0 4h2v6h-2v-6Zm1-9a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm0 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Z"/></symbol>
+</svg>
+</body>
+</html>

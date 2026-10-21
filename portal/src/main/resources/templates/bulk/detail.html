@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Bulk file')}"></head>
+<body>
+<th:block th:replace="~{fragments/layout :: icons}"></th:block>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: aside}"></aside>
+    <div class="main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+        <main class="content">
+            <div class="flash-area" th:if="${success != null || error != null}">
+                <div class="alert success" th:if="${success != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-check"/></svg>
+                    <span th:text="${success}">Done.</span>
+                </div>
+                <div class="alert danger" th:if="${error != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-warning"/></svg>
+                    <span th:text="${error}">Error.</span>
+                </div>
+            </div>
+
+            <div class="page-head">
+                <div>
+                    <div class="crumbs">
+                        <a th:href="@{/bulk-payments}">Bulk payments</a> · <span th:text="${file.ref}">REF</span>
+                    </div>
+                    <h1 th:text="${file.fileName}">bulk-file.csv</h1>
+                    <p class="page-sub" th:text="${file.ref} + ' · uploaded by ' + ${file.uploadedByName}">REF · uploaded by</p>
+                </div>
+                <span class="badge" th:classappend="${({'UPLOADED':'neutral','PARSING':'info','PARSED_WITH_ERRORS':'warning','PARSED':'info','LINES_RELEASED':'success','REJECTED':'danger'})[file.status] ?: 'neutral'}"
+                      th:text="${file.status}">status</span>
+            </div>
+
+            <div class="grid grid-4">
+                <div class="stat-card accent">
+                    <div class="stat-label">Declared total</div>
+                    <div class="stat-value">
+                        <span class="amount" th:text="${#numbers.formatDecimal(file.declaredTotal,1,2)}">0.00</span>
+                        <span class="ccy">GBP</span>
+                    </div>
+                    <div class="stat-foot" th:text="${file.declaredCount} + ' declared line(s)'">0 lines</div>
+                </div>
+                <div class="stat-card accent-info">
+                    <div class="stat-label">Line counts</div>
+                    <div class="stat-value" th:text="${file.parsedCount}">0</div>
+                    <div class="stat-foot">
+                        <span th:text="${file.validCount} + ' valid'">0 valid</span> ·
+                        <span th:if="${file.invalidCount > 0}" style="color:var(--danger);font-weight:600"
+                              th:text="${file.invalidCount} + ' invalid'">0 invalid</span>
+                        <span th:if="${file.invalidCount == 0}" th:text="${file.invalidCount} + ' invalid'">0 invalid</span>
+                    </div>
+                </div>
+                <div class="stat-card accent-gold">
+                    <div class="stat-label">Status</div>
+                    <div class="stat-value" style="font-size:1.05rem;padding-top:.5rem">
+                        <span class="badge" th:classappend="${({'UPLOADED':'neutral','PARSING':'info','PARSED_WITH_ERRORS':'warning','PARSED':'info','LINES_RELEASED':'success','REJECTED':'danger'})[file.status] ?: 'neutral'}"
+                              th:text="${file.status}">status</span>
+                    </div>
+                    <div class="stat-foot" th:if="${file.processedAt != null}"
+                         th:text="${'processed ' + #temporals.format(file.processedAt,'dd MMM · HH:mm')}">processed</div>
+                    <div class="stat-foot" th:if="${file.processedAt == null}">Not processed yet</div>
+                </div>
+                <div class="stat-card accent-info">
+                    <div class="stat-label">Uploaded</div>
+                    <div class="stat-value" style="font-size:1.1rem" th:text="${#temporals.format(file.uploadedAt,'dd MMM yyyy')}">date</div>
+                    <div class="stat-foot" th:text="${'by ' + file.uploadedByName}">by user</div>
+                </div>
+            </div>
+
+            <div class="card mt-2">
+                <div class="card-head">
+                    <h2>Lines</h2>
+                    <a class="btn btn-outline btn-sm" th:if="${file.invalidCount > 0}"
+                       th:href="@{/bulk-payments/{id}/error-report(id=${file.id})}">
+                        <svg width="14" height="14"><use href="#icon-download"/></svg> Download error report
+                    </a>
+                </div>
+                <div class="card-body flush">
+                    <div th:if="${#lists.isEmpty(file.lines)}" class="empty-state">
+                        <div class="empty-icon">
+                            <svg width="24" height="24"><use href="#icon-upload"/></svg>
+                        </div>
+                        <h3>No lines yet</h3>
+                        <p>The batch processor hasn't parsed this file yet.</p>
+                    </div>
+                    <div class="table-wrap" th:unless="${#lists.isEmpty(file.lines)}">
+                        <table class="data">
+                            <thead>
+                            <tr>
+                                <th class="num">Line</th><th>Debit account</th><th>Beneficiary account</th>
+                                <th class="num">Amount</th><th>Value date</th><th>Reference</th>
+                                <th>Status</th><th>Error</th><th>Payment</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="l : ${file.lines}">
+                                <td class="num mono" th:text="${l.lineNumber}">1</td>
+                                <td class="mono" th:text="${l.debitAccountNumber != null ? l.debitAccountNumber : '—'}">acct</td>
+                                <td class="mono" th:text="${l.beneficiaryAccountNumber != null ? l.beneficiaryAccountNumber + (l.bankCode != null ? ' · ' + l.bankCode : '') : '—'}">acct · bank</td>
+                                <td class="num amount">
+                                    <span th:if="${l.amount != null}" th:text="${#numbers.formatDecimal(l.amount,1,2)}">0.00</span>
+                                    <span th:if="${l.amount == null}">—</span>
+                                </td>
+                                <td class="nowrap" th:text="${l.valueDate != null ? #temporals.format(l.valueDate,'dd MMM yyyy') : '—'}">date</td>
+                                <td th:text="${l.reference != null ? l.reference : '—'}">ref</td>
+                                <td>
+                                    <span class="badge" th:classappend="${({'VALID':'info','INVALID':'danger','APPROVED':'warning','RELEASED':'success','REJECTED':'danger'})[l.status] ?: 'neutral'}"
+                                          th:text="${l.status != null ? l.status : 'UNPROCESSED'}">status</span>
+                                </td>
+                                <td>
+                                    <span th:if="${l.errorMessage != null}" class="small" style="color:var(--danger)"
+                                          th:text="${l.errorMessage}">error</span>
+                                    <span th:if="${l.errorMessage == null}" class="muted">—</span>
+                                </td>
+                                <td>
+                                    <span th:if="${l.paymentRef != null}" class="mono cell-strong" th:text="${l.paymentRef}">PAY-REF</span>
+                                    <span th:if="${l.paymentRef == null}" class="muted">—</span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-foot" th:if="${! #lists.isEmpty(file.lines)}">
+                    <span th:text="${file.lines.size()} + ' line(s) parsed'">0 lines</span>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<footer th:replace="~{fragments/layout :: scripts}"></footer>
+</body>
+</html>

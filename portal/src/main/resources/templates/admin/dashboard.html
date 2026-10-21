@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="en">
+<head th:replace="~{fragments/layout :: head('Bank administration')}"></head>
+<body>
+<th:block th:replace="~{fragments/layout :: icons}"></th:block>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: aside}"></aside>
+    <div class="main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+        <main class="content">
+            <div class="flash-area" th:if="${success != null || error != null}">
+                <div class="alert success" th:if="${success != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-check"/></svg>
+                    <span th:text="${success}">Done.</span>
+                </div>
+                <div class="alert danger" th:if="${error != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-warning"/></svg>
+                    <span th:text="${error}">Error.</span>
+                </div>
+            </div>
+
+            <div class="page-head">
+                <div>
+                    <div class="crumbs"><a th:href="@{/admin}">Administration</a> · Overview</div>
+                    <h1>Bank administration</h1>
+                    <p class="page-sub">Companies, limits, reversal decisions and the audit trail.</p>
+                </div>
+                <div class="flex gap-1 wrap">
+                    <a class="btn btn-primary" th:href="@{/admin/companies/new}">
+                        <svg width="16" height="16"><use href="#icon-plus"/></svg> Onboard company
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-4">
+                <div class="stat-card accent">
+                    <div class="stat-label">Companies</div>
+                    <div class="stat-value" th:text="${#lists.size(dashboard.companies)}">0</div>
+                    <div class="stat-foot">Onboarded corporates</div>
+                </div>
+                <div class="stat-card accent-gold">
+                    <div class="stat-label">Pending reversal approvals</div>
+                    <div class="stat-value" th:text="${dashboard.pendingReversals}">0</div>
+                    <div class="stat-foot">Awaiting a bank administrator</div>
+                </div>
+                <div class="stat-card accent-info">
+                    <div class="stat-label">Audit events 24h</div>
+                    <div class="stat-value" th:text="${dashboard.auditEvents24h}">0</div>
+                    <div class="stat-foot">Across all companies</div>
+                </div>
+                <div class="stat-card accent">
+                    <div class="stat-label">Released today</div>
+                    <div class="stat-value">
+                        <span class="amount" th:text="${#numbers.formatDecimal(dashboard.totalReleasedToday,1,2)}">0.00</span>
+                    </div>
+                    <div class="stat-foot">Total released value</div>
+                </div>
+            </div>
+
+            <div class="card mt-2">
+                <div class="card-head">
+                    <h2>Companies</h2>
+                    <a class="btn btn-ghost btn-sm" th:href="@{/admin/companies}">View all</a>
+                </div>
+                <div class="card-body flush">
+                    <div th:if="${#lists.isEmpty(dashboard.companies)}" class="empty-state">
+                        <h3>No companies onboarded yet</h3>
+                        <p>Onboard the first company to start receiving payment instructions.</p>
+                    </div>
+                    <div class="table-wrap" th:unless="${#lists.isEmpty(dashboard.companies)}">
+                        <table class="data">
+                            <thead>
+                            <tr>
+                                <th>Company</th><th>Registration</th><th>Base currency</th>
+                                <th class="num">Daily limit</th><th>Utilisation today</th>
+                                <th class="num">Users</th><th class="num">Pending reversals</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="c : ${dashboard.companies}">
+                                <td>
+                                    <a class="cell-strong" th:href="@{/admin/companies/{id}(id=${c.id})}" th:text="${c.legalName}">company</a>
+                                </td>
+                                <td class="mono" th:text="${c.registrationNumber}">reg</td>
+                                <td th:text="${c.baseCurrency}">GBP</td>
+                                <td class="num amount">
+                                    <span th:text="${#numbers.formatDecimal(c.dailyLimit,1,2)}">0.00</span>
+                                    <span class="ccy" th:text="${c.baseCurrency}">GBP</span>
+                                </td>
+                                <td style="min-width:150px">
+                                    <div class="flex-between small muted">
+                                        <span th:text="${#numbers.formatDecimal(c.utilisationToday.used,1,2)}">0</span>
+                                        <span th:text="${#numbers.formatDecimal(c.utilisationToday.limit,1,2)} + ' ' + ${c.baseCurrency}">limit</span>
+                                    </div>
+                                    <div class="progress mt-1" th:classappend="${c.utilisationToday.percent > 80 ? 'danger' : (c.utilisationToday.percent > 60 ? 'warn' : '')}">
+                                        <span th:style="'width:' + ${c.utilisationToday.percent} + '%'"></span>
+                                    </div>
+                                    <div class="small muted" th:text="${c.utilisationToday.percent} + '%'">0%</div>
+                                </td>
+                                <td class="num" th:text="${c.userCount}">0</td>
+                                <td class="num" th:text="${c.pendingReversals}">0</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-foot" th:if="${! #lists.isEmpty(dashboard.companies)}">
+                    <a th:href="@{/admin/companies}">View all companies</a>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<footer th:replace="~{fragments/layout :: scripts}"></footer>
+</body>
+</html>

@@ -1,0 +1,62 @@
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    session:
+      timeout: 8h
+      cookie:
+        http-only: false
+        same-site: lax
+        secure: ${SESSION_COOKIE_SECURE:false}
+  error:
+    whitelabel:
+      enabled: false
+
+spring:
+  application:
+    name: portal
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/portal}
+    username: ${SPRING_DATASOURCE_USERNAME:portal}
+    password: ${SPRING_DATASOURCE_PASSWORD:portal_dev_password}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+  flyway:
+    enabled: true
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+  threads:
+    virtual:
+      enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+app:
+  security:
+    tier-token-secret: ${TIER_TOKEN_SECRET:}
+    internal-service-token: ${INTERNAL_SERVICE_TOKEN:}
+  payment-api:
+    base-url: ${PAYMENT_API_BASE_URL:http://localhost:8081}
+  uploads:
+    dir: ${PORTAL_UPLOAD_DIR:./uploads}
+  seed:
+    enabled: ${PORTAL_SEED_ENABLED:true}
+
+logging:
+  level:
+    root: INFO
+    com.northbridge.portal: INFO

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="en">
+<head th:replace="~{fragments/layout :: head('Reversal approvals')}"></head>
+<body>
+<th:block th:replace="~{fragments/layout :: icons}"></th:block>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: aside}"></aside>
+    <div class="main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+        <main class="content">
+            <div class="flash-area" th:if="${success != null || error != null}">
+                <div class="alert success" th:if="${success != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-check"/></svg>
+                    <span th:text="${success}">Done.</span>
+                </div>
+                <div class="alert danger" th:if="${error != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-warning"/></svg>
+                    <span th:text="${error}">Error.</span>
+                </div>
+            </div>
+
+            <div class="page-head">
+                <div>
+                    <div class="crumbs"><a th:href="@{/admin}">Administration</a> · Reversal approvals</div>
+                    <h1>Reversal approvals</h1>
+                    <p class="page-sub">Approve or decline reversals requested by bank operations.</p>
+                </div>
+                <a class="btn btn-outline" th:href="@{/ops/reversals}">
+                    <svg width="16" height="16"><use href="#icon-reversal"/></svg> All reversals
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-body flush">
+                    <div th:if="${#lists.isEmpty(reversals)}" class="empty-state">
+                        <div class="empty-icon">
+                            <svg width="24" height="24"><use href="#icon-reversal"/></svg>
+                        </div>
+                        <h3>No reversals yet</h3>
+                        <p>Reversals requested by bank operations appear here for a decision.</p>
+                    </div>
+                    <div class="table-wrap" th:unless="${#lists.isEmpty(reversals)}">
+                        <table class="data">
+                            <thead>
+                            <tr>
+                                <th>Payment</th><th>Reason</th><th>Requested by</th><th>Requested at</th>
+                                <th>Status</th><th></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="r : ${reversals}">
+                                <td>
+                                    <a class="cell-strong" th:href="@{/ops/payments/{id}(id=${r.paymentId})}" th:text="${r.paymentRef}">REF</a>
+                                </td>
+                                <td th:text="${r.reason}">reason</td>
+                                <td th:text="${r.requestedByName != null ? r.requestedByName : '—'}">by</td>
+                                <td class="nowrap" th:text="${#temporals.format(r.requestedAt,'dd MMM · HH:mm')}">at</td>
+                                <td>
+                                    <span class="badge" th:classappend="${({'REQUESTED':'warning','APPROVED':'info','POSTED':'success','DECLINED':'neutral'})[r.status] ?: 'neutral'}"
+                                          th:text="${r.status}">status</span>
+                                </td>
+                                <td class="right nowrap">
+                                    <div class="row-actions" th:if="${r.status == 'REQUESTED'}">
+                                        <form method="post" th:action="@{/admin/reversals/{id}/approve(id=${r.id})}"
+                                              data-confirm="Approve this reversal?">
+                                            <button class="btn btn-primary btn-sm" type="submit">Approve</button>
+                                        </form>
+                                        <form method="post" th:action="@{/admin/reversals/{id}/decline(id=${r.id})}"
+                                              data-confirm="Decline this reversal?">
+                                            <button class="btn btn-danger-outline btn-sm" type="submit">Decline</button>
+                                        </form>
+                                    </div>
+                                    <span th:if="${r.status != 'REQUESTED'}" class="small muted"
+                                          th:text="${(r.approvedByName != null ? r.approvedByName : '—') + ' · ' + (r.decidedAt != null ? #temporals.format(r.decidedAt,'dd MMM · HH:mm') : '—')}">decided</span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-foot" th:if="${! #lists.isEmpty(reversals)}">
+                    <span th:text="${#lists.size(reversals)} + ' reversal(s)'">0 reversals</span>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<footer th:replace="~{fragments/layout :: scripts}"></footer>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="en">
+<head th:replace="~{fragments/layout :: head('Release monitor')}"></head>
+<body>
+<th:block th:replace="~{fragments/layout :: icons}"></th:block>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: aside}"></aside>
+    <div class="main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+        <main class="content">
+            <div class="flash-area" th:if="${success != null || error != null}">
+                <div class="alert success" th:if="${success != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-check"/></svg>
+                    <span th:text="${success}">Done.</span>
+                </div>
+                <div class="alert danger" th:if="${error != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-warning"/></svg>
+                    <span th:text="${error}">Error.</span>
+                </div>
+            </div>
+
+            <div class="page-head">
+                <div>
+                    <div class="crumbs"><a th:href="@{/ops}">Bank operations</a> · Release monitor</div>
+                    <h1>Release monitor</h1>
+                    <p class="page-sub">Settlement releases across all companies, in real time.</p>
+                </div>
+                <div class="flex gap-1 wrap">
+                    <a class="btn btn-outline" th:href="@{/ops/releases}">All releases</a>
+                    <a class="btn btn-outline" th:href="@{/ops/reversals}">
+                        <svg width="16" height="16"><use href="#icon-reversal"/></svg> Reversals
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-4">
+                <div class="stat-card accent">
+                    <div class="stat-label">Released today</div>
+                    <div class="stat-value">
+                        <span class="amount" th:text="${#numbers.formatDecimal(dashboard.releasedTodayValue,1,2)}">0.00</span>
+                    </div>
+                    <div class="stat-foot" th:text="${dashboard.releasedTodayCount} + ' payment(s)'">0 payments</div>
+                </div>
+                <div class="stat-card accent-danger">
+                    <div class="stat-label">Failed releases</div>
+                    <div class="stat-value" th:text="${dashboard.failedReleases}">0</div>
+                    <div class="stat-foot">Requiring bank attention</div>
+                </div>
+                <div class="stat-card accent-gold">
+                    <div class="stat-label">Investigating</div>
+                    <div class="stat-value" th:text="${dashboard.investigatingReleases}">0</div>
+                    <div class="stat-foot">Open investigations</div>
+                </div>
+                <div class="stat-card accent-info">
+                    <div class="stat-label">Due for release today</div>
+                    <div class="stat-value" th:text="${dashboard.dueToday}">0</div>
+                    <div class="stat-foot" th:text="${dashboard.pendingReversals} + ' reversal request(s) pending'">0 pending</div>
+                </div>
+            </div>
+
+            <div class="grid grid-2 mt-2">
+                <div class="card">
+                    <div class="card-head">
+                        <h2>Recent releases</h2>
+                        <a class="btn btn-ghost btn-sm" th:href="@{/ops/releases}">View all</a>
+                    </div>
+                    <div class="card-body flush">
+                        <div th:if="${#lists.isEmpty(dashboard.recentReleases)}" class="empty-state">
+                            <h3>No releases yet</h3>
+                            <p>Approved payments appear here as they are released.</p>
+                        </div>
+                        <div class="table-wrap" th:unless="${#lists.isEmpty(dashboard.recentReleases)}">
+                            <table class="data">
+                                <thead>
+                                <tr><th>Reference</th><th>Core ref</th><th class="num">Posted amount</th><th>Response</th><th>Investigation</th><th>Attempted</th></tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="r : ${dashboard.recentReleases}">
+                                    <td>
+                                        <a class="cell-strong" th:href="@{/ops/releases}" th:text="${r.paymentRef}">REF</a>
+                                    </td>
+                                    <td class="mono" th:text="${r.coreRef != null ? r.coreRef : '—'}">core</td>
+                                    <td class="num amount"><span th:text="${#numbers.formatDecimal(r.postedAmount,1,2)}">0.00</span></td>
+                                    <td class="mono" th:text="${r.responseCode != null ? r.responseCode : '—'}">00</td>
+                                    <td>
+                                        <span class="badge" th:classappend="${({'NONE':'neutral','INVESTIGATING':'warning','EXCEPTION':'danger','RESOLVED':'success'})[r.investigationStatus] ?: 'neutral'}"
+                                              th:text="${r.investigationStatus}">NONE</span>
+                                    </td>
+                                    <td class="nowrap" th:text="${#temporals.format(r.attemptedAt,'dd MMM · HH:mm')}">when</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head">
+                        <h2>Recent failures</h2>
+                        <a class="btn btn-ghost btn-sm" th:href="@{/ops/releases}">View all</a>
+                    </div>
+                    <div class="card-body flush">
+                        <div th:if="${#lists.isEmpty(dashboard.recentFailures)}" class="empty-state">
+                            <h3>No failures</h3>
+                            <p>Failed releases will appear here for bank attention.</p>
+                        </div>
+                        <div class="table-wrap" th:unless="${#lists.isEmpty(dashboard.recentFailures)}">
+                            <table class="data">
+                                <thead>
+                                <tr><th>Reference</th><th class="num">Amount</th><th>Reason</th><th>Status</th></tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="f : ${dashboard.recentFailures}">
+                                    <td>
+                                        <a class="cell-strong" th:href="@{/ops/releases}" th:text="${f.ref}">REF</a>
+                                    </td>
+                                    <td class="num amount">
+                                        <span th:text="${#numbers.formatDecimal(f.amount,1,2)}">0.00</span>
+                                        <span class="ccy" th:text="${f.currency}">GBP</span>
+                                    </td>
+                                    <td th:text="${f.reason != null ? f.reason : '—'}">reason</td>
+                                    <td>
+                                        <span class="badge" th:classappend="${({'RELEASED':'success','APPROVED':'info','PENDING_APPROVAL':'warning','PARTIALLY_APPROVED':'warning','DRAFT':'neutral','REJECTED':'danger','RETURNED':'neutral','FAILED':'danger','QUEUED_FOR_RELEASE':'info','REVERSED':'neutral'})[f.status] ?: 'neutral'}"
+                                              th:text="${f.status}">status</span>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<footer th:replace="~{fragments/layout :: scripts}"></footer>
+</body>
+</html>

@@ -1,0 +1,27 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:payapi;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    open-in-view: false
+  flyway:
+    enabled: false
+
+app:
+  seed:
+    enabled: false
+  security:
+    tier-token-secret: test-tier-token-secret-0123456789
+    core-scope-secret: test-core-scope-secret-0123456789
+    internal-service-token: test-internal-service-token-0123456789
+  core:
+    base-url: http://localhost:9999
+    api-key: test-core-api-key-0123456789
+
+logging:
+  level:
+    root: WARN
+    com.northbridge.paymentapi: INFO

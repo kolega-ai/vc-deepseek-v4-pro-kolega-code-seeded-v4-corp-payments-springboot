@@ -1,0 +1,39 @@
+server:
+  port: ${SERVER_PORT:8083}
+
+spring:
+  main:
+    web-application-type: none
+  application:
+    name: batch
+  datasource:
+    # Spring Batch metadata lives in the payment_api database (its own tables).
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/payment_api}
+    username: ${SPRING_DATASOURCE_USERNAME:payment_api}
+    password: ${SPRING_DATASOURCE_PASSWORD:paymentapi_dev_password}
+  batch:
+    jdbc:
+      initialize-schema: never
+    job:
+      enabled: false
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:org/springframework/batch/core/schema-postgresql.sql
+  jpa:
+    open-in-view: false
+
+app:
+  payment-api:
+    base-url: ${PAYMENT_API_BASE_URL:http://localhost:8081}
+  core:
+    base-url: ${CORE_MOCK_BASE_URL:http://localhost:8082}
+    api-key: ${CORE_MOCK_API_KEY:}
+  security:
+    internal-service-token: ${INTERNAL_SERVICE_TOKEN:}
+    core-scope-secret: ${CORE_SCOPE_SECRET:}
+
+logging:
+  level:
+    root: INFO
+    com.northbridge.batch: INFO

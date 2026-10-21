@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="en">
+<head th:replace="~{fragments/layout :: head('Notifications')}"></head>
+<body>
+<th:block th:replace="~{fragments/layout :: icons}"></th:block>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: aside}"></aside>
+    <div class="main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+        <main class="content">
+            <div class="flash-area" th:if="${success != null || error != null}">
+                <div class="alert success" th:if="${success != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-check"/></svg>
+                    <span th:text="${success}">Done.</span>
+                </div>
+                <div class="alert danger" th:if="${error != null}">
+                    <svg class="alert-icon" width="18" height="18"><use href="#icon-warning"/></svg>
+                    <span th:text="${error}">Error.</span>
+                </div>
+            </div>
+
+            <div class="page-head">
+                <div>
+                    <div class="crumbs"><a th:href="@{/dashboard}">Workspace</a> · Notifications</div>
+                    <h1>Notifications</h1>
+                    <p class="page-sub">Decisions and events from the payment decision tier.</p>
+                </div>
+                <div class="flex gap-1 wrap">
+                    <form method="post" th:action="@{/notifications/read-all}">
+                        <button class="btn btn-outline btn-sm" type="submit">
+                            <svg width="14" height="14"><use href="#icon-check"/></svg> Mark all read
+                        </button>
+                    </form>
+                    <a class="btn btn-ghost btn-sm" th:if="${unreadOnly}" th:href="@{/notifications}">All</a>
+                    <a class="btn btn-ghost btn-sm" th:if="${!unreadOnly}" th:href="@{/notifications(unreadOnly=true)}">Unread only</a>
+                </div>
+            </div>
+
+            <div th:if="${#lists.isEmpty(notifications)}" class="empty-state card">
+                <div class="empty-icon">
+                    <svg width="24" height="24"><use href="#icon-bell"/></svg>
+                </div>
+                <h3>No notifications</h3>
+                <p th:text="${unreadOnly ? 'You are all caught up — nothing unread.' : 'You have not received any notifications yet.'}">caught up</p>
+            </div>
+
+            <div th:unless="${#lists.isEmpty(notifications)}">
+                <div class="card mb-1" th:each="n : ${notifications}">
+                    <div class="card-body" th:style="${n.readAt == null ? 'border-left:3px solid var(--gold)' : ''}">
+                        <div class="flex-between">
+                            <div>
+                                <span class="badge neutral" th:text="${n.type}">type</span>
+                                <span th:text="${n.message}">message</span>
+                            </div>
+                            <span class="small muted nowrap" th:text="${#temporals.format(n.createdAt,'dd MMM · HH:mm')}">time</span>
+                        </div>
+                        <div class="flex gap-1 wrap mt-1">
+                            <a class="btn btn-outline btn-sm" th:if="${n.link != null}" th:href="${n.link}">Open</a>
+                            <form th:if="${n.readAt == null}" method="post"
+                                  th:action="@{/notifications/{id}/read(id=${n.id})}">
+                                <button class="btn btn-ghost btn-sm" type="submit">Mark read</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<footer th:replace="~{fragments/layout :: scripts}"></footer>
+</body>
+</html>
